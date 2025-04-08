@@ -9,7 +9,7 @@
 
 /* Windows specific */
 #ifdef _WIN32
-#include <Windows.h>
+#include <windows.h>
 typedef unsigned long long file_off_t;
 #else
 #include <sys/types.h>
@@ -340,7 +340,7 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
     uint64_t* pd = (uint64_t*)p;
     uint64_t* pde = pd + (size / sizeof(uint64_t));
 
-    for (; pd < pde; pd++)
+    for (; pd < pde; pd++) // +1, including nesting penalty of 0, nesting level increased to 1
     {
         /* unpack 64bits to 8x8bits */
         char c0, c1, c2, c3, c4, c5, c6, c7;
@@ -354,6 +354,10 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
         c6 = p[6];
         c7 = p[7];
 
+        // +2, including nesting penalty of 1, nesting level increased to 2
+        // +3, including nesting penalty of 2, nesting level increased to 3
+        // +1, nesting level increased to 3
+        // +1
         CSV_QUOTE_BR(c, 0);
         CSV_QUOTE_BR(c, 1);
         CSV_QUOTE_BR(c, 2);
@@ -365,8 +369,8 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
     }
     p = (char*)pde;
 #endif
-    
-    for (; p < end; p++)
+
+    for (; p < end; p++) // +1, including nesting penalty of 0, nesting level increased to 1
     {
         char c0 = *p;
         CSV_QUOTE_BR(c, 0);
@@ -452,71 +456,71 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
     /* return properly escaped CSV col
      * RFC: [https://tools.ietf.org/html/rfc4180]
      */
-    char* p = handle->context ? handle->context : row;
+    char* p = handle->context ? handle->context : row; // +1, including nesting penalty of 0, nesting level increased to 1
     char* d = p; /* destination */
     char* b = p; /* begin */
     int quoted = 0; /* idicates quoted string */
 
     quoted = *p == handle->quote;
-    if (quoted)
+    if (quoted) // +1, including nesting penalty of 0, nesting level increased to 1
         p++;
 
-    for (; *p; p++, d++)
+    for (; *p; p++, d++) // +1, including nesting penalty of 0, nesting level increased to 1
     {
         /* double quote is present if (1) */
         int dq = 0;
         
         /* skip escape */
-        if (*p == handle->escape && p[1])
+        if (*p == handle->escape && p[1]) // +2, including nesting penalty of 1, nesting level increased to 2 // +1
             p++;
 
         /* skip double-quote */
-        if (*p == handle->quote && p[1] == handle->quote)
+        if (*p == handle->quote && p[1] == handle->quote) // +2, including nesting penalty of 1, nesting level increased to 2 // +1
         {
             dq = 1;
             p++;
         }
 
         /* check if we should end */
-        if (quoted && !dq)
+        if (quoted && !dq) // +2, including nesting penalty of 1, nesting level increased to 2 // +1
         {
-            if (*p == handle->quote)
+            if (*p == handle->quote) // +3, including nesting penalty of 2, nesting level increased to 3
                 break;
         }
-        else if (*p == handle->delim)
+        else if (*p == handle->delim) // +1, nesting level increased to 2
         {
             break;
         }
 
         /* copy if required */
-        if (d != p)
+        if (d != p) // +2, including nesting penalty of 1, nesting level increased to 2
             *d = *p;
     }
     
-    if (!*p)
+    if (!*p) // +1, including nesting penalty of 0, nesting level increased to 1
     {
         /* nothing to do */
-        if (p == b)
+        if (p == b) // +2, including nesting penalty of 1, nesting level increased to 2
             return NULL;
 
         handle->context = p;
     }
-    else
+    else // +1, nesting level increased to 1
     {
         /* end reached, skip */
         *d = '\0';
-        if (quoted)
+        if (quoted) // +2, including nesting penalty of 1, nesting level increased to 2
         {
-            for (p++; *p; p++)
-                if (*p == handle->delim)
+            for (p++; *p; p++) // +3, including nesting penalty of 2, nesting level increased to 3
+                if (*p == handle->delim) // +4, including nesting penalty of 3, nesting level increased to 4
                     break;
 
-            if (*p)
+            if (*p) // +3, including nesting penalty of 2, nesting level increased to
                 p++;
             
             handle->context = p;
         }
-        else
+        else //  +1, nesting level increased to 2
         {
             handle->context = p + 1;
         }
