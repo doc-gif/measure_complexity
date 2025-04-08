@@ -9,7 +9,7 @@
 
 /* Windows specific */
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 typedef unsigned long long file_off_t;
 #else
 #include <sys/types.h>
@@ -54,7 +54,7 @@ struct CsvHandle_
     size_t auxbufPos;
     size_t quotes;
     void* auxbuf;
-    
+
 #if defined ( __unix__ )
     int fh;
 #elif defined ( _WIN32 )
@@ -114,7 +114,7 @@ CsvHandle CsvOpen2(const char* filename,
 
     /* align to system page size */
     handle->blockSize = GET_PAGE_ALIGNED(BUFFER_WIDTH_APROX, pageSize);
-    
+
     /* open new fd */
     handle->fh = open(filename, O_RDONLY);
     if (handle->fh < 0)
@@ -126,10 +126,10 @@ CsvHandle CsvOpen2(const char* filename,
        close(handle->fh);
        goto fail;
     }
-    
+
     handle->fileSize = fs.st_size;
     return handle;
-    
+
   fail:
     free(handle);
     return NULL;
@@ -184,12 +184,12 @@ CsvHandle CsvOpen2(const char* filename,
 
     GetSystemInfo(&info);
     handle->blockSize = GET_PAGE_ALIGNED(BUFFER_WIDTH_APROX, info.dwPageSize);
-    handle->fh = CreateFile(filename, 
-                            GENERIC_READ, 
-                            FILE_SHARE_READ, 
-                            NULL, 
-                            OPEN_EXISTING, 
-                            FILE_ATTRIBUTE_NORMAL, 
+    handle->fh = CreateFile(filename,
+                            GENERIC_READ,
+                            FILE_SHARE_READ,
+                            NULL,
+                            OPEN_EXISTING,
+                            FILE_ATTRIBUTE_NORMAL,
                             NULL);
 
     if (handle->fh == INVALID_HANDLE_VALUE)
@@ -222,7 +222,7 @@ static void* MapMem(CsvHandle handle)
     if (handle->mapSize + size > handle->fileSize)
         size = 0;  /* last chunk, extend to file mapping max */
 
-    handle->mem = MapViewOfFileEx(handle->fm, 
+    handle->mem = MapViewOfFileEx(handle->fm,
                                   FILE_MAP_COPY,
                                   (DWORD)(handle->mapSize >> 32),
                                   (DWORD)(handle->mapSize & 0xFFFFFFFF),
@@ -255,12 +255,12 @@ void CsvClose(CsvHandle handle)
 static int CsvEnsureMapped(CsvHandle handle)
 {
     file_off_t newSize;
-    
+
     /* do not need to map */
     if (handle->pos < handle->size)
         return 0;
 
-    UnmapMem(handle);  
+    UnmapMem(handle);
 
     handle->mem = NULL;
     if (handle->mapSize >= handle->fileSize)
@@ -278,10 +278,10 @@ static int CsvEnsureMapped(CsvHandle handle)
         handle->size = handle->blockSize;
         if (handle->mapSize > handle->fileSize)
             handle->size = (size_t)(handle->fileSize % handle->blockSize);
-        
+
         return 0;
     }
-    
+
     return -ENOMEM;
 }
 
@@ -300,7 +300,7 @@ static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
 
     memcpy((char*)handle->auxbuf + handle->auxbufPos, p, size);
     handle->auxbufPos += size;
-    
+
     *(char*)((char*)handle->auxbuf + handle->auxbufPos) = '\0';
     return handle->auxbuf;
 }
@@ -340,7 +340,7 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
     uint64_t* pd = (uint64_t*)p;
     uint64_t* pde = pd + (size / sizeof(uint64_t));
 
-    for (; pd < pde; pd++) // +1, including nesting penalty of 0, nesting level increased to 1
+    for (; pd < pde; pd++)
     {
         /* unpack 64bits to 8x8bits */
         char c0, c1, c2, c3, c4, c5, c6, c7;
@@ -354,10 +354,6 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
         c6 = p[6];
         c7 = p[7];
 
-        // +2, including nesting penalty of 1, nesting level increased to 2
-        // +3, including nesting penalty of 2, nesting level increased to 3
-        // +1, nesting level increased to 3
-        // +1
         CSV_QUOTE_BR(c, 0);
         CSV_QUOTE_BR(c, 1);
         CSV_QUOTE_BR(c, 2);
@@ -370,7 +366,7 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
     p = (char*)pde;
 #endif
 
-    for (; p < end; p++) // +1, including nesting penalty of 0, nesting level increased to 1
+    for (; p < end; p++)
     {
         char c0 = *p;
         CSV_QUOTE_BR(c, 0);
@@ -389,7 +385,7 @@ char* CsvReadNextRow(CsvHandle handle)
     {
         int err = CsvEnsureMapped(handle);
         handle->context = NULL;
-        
+
         if (err == -EINVAL)
         {
             /* if this is n-th iteration
@@ -403,7 +399,7 @@ char* CsvReadNextRow(CsvHandle handle)
         {
             break;
         }
-        
+
         size = handle->size - handle->pos;
         if (!size)
             break;
@@ -418,12 +414,12 @@ char* CsvReadNextRow(CsvHandle handle)
             size = (size_t)(found - p) + 1;
             handle->pos += size;
             handle->quotes = 0;
-            
+
             if (handle->auxbufPos)
             {
                 if (!CsvChunkToAuxBuf(handle, p, size))
                     break;
-                
+
                 p = handle->auxbuf;
                 size = handle->auxbufPos;
             }
@@ -456,71 +452,71 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
     /* return properly escaped CSV col
      * RFC: [https://tools.ietf.org/html/rfc4180]
      */
-    char* p = handle->context ? handle->context : row; // +1, including nesting penalty of 0, nesting level increased to 1
+    char* p = handle->context ? handle->context : row;
     char* d = p; /* destination */
     char* b = p; /* begin */
     int quoted = 0; /* idicates quoted string */
 
     quoted = *p == handle->quote;
-    if (quoted) // +1, including nesting penalty of 0, nesting level increased to 1
+    if (quoted)
         p++;
 
-    for (; *p; p++, d++) // +1, including nesting penalty of 0, nesting level increased to 1
+    for (; *p; p++, d++)
     {
         /* double quote is present if (1) */
         int dq = 0;
-        
+
         /* skip escape */
-        if (*p == handle->escape && p[1]) // +2, including nesting penalty of 1, nesting level increased to 2 // +1
+        if (*p == handle->escape && p[1])
             p++;
 
         /* skip double-quote */
-        if (*p == handle->quote && p[1] == handle->quote) // +2, including nesting penalty of 1, nesting level increased to 2 // +1
+        if (*p == handle->quote && p[1] == handle->quote)
         {
             dq = 1;
             p++;
         }
 
         /* check if we should end */
-        if (quoted && !dq) // +2, including nesting penalty of 1, nesting level increased to 2 // +1
+        if (quoted && !dq)
         {
-            if (*p == handle->quote) // +3, including nesting penalty of 2, nesting level increased to 3
+            if (*p == handle->quote)
                 break;
         }
-        else if (*p == handle->delim) // +1, nesting level increased to 2
+        else if (*p == handle->delim)
         {
             break;
         }
 
         /* copy if required */
-        if (d != p) // +2, including nesting penalty of 1, nesting level increased to 2
+        if (d != p)
             *d = *p;
     }
-    
-    if (!*p) // +1, including nesting penalty of 0, nesting level increased to 1
+
+    if (!*p)
     {
         /* nothing to do */
-        if (p == b) // +2, including nesting penalty of 1, nesting level increased to 2
+        if (p == b)
             return NULL;
 
         handle->context = p;
     }
-    else // +1, nesting level increased to 1
+    else
     {
         /* end reached, skip */
         *d = '\0';
-        if (quoted) // +2, including nesting penalty of 1, nesting level increased to 2
+        if (quoted)
         {
-            for (p++; *p; p++) // +3, including nesting penalty of 2, nesting level increased to 3
-                if (*p == handle->delim) // +4, including nesting penalty of 3, nesting level increased to 4
+            for (p++; *p; p++)
+                if (*p == handle->delim)
                     break;
 
-            if (*p) // +3, including nesting penalty of 2, nesting level increased to
+            if (*p)
                 p++;
-            
+
             handle->context = p;
         }
-        else //  +1, nesting level increased to 2
+        else
         {
             handle->context = p + 1;
         }
