@@ -22,21 +22,21 @@ int sumOfPrimes(int max) {
 // cognitive complexity: 6
 
 // cyclomatic complexity: +1
-String getWords(int number) {
-  // cognitive complexity: +1, nesting level is now 1
-  switch (number) {
-    // cyclomatic complexity: +1
-    case 1:
-      return "one";
-    // cyclomatic complexity: +1
-    case 2:
-      return "a couple";
-    // cyclomatic complexity: +1
-    case 3:
-      return "a few";
-    default:
-      return "lots";
-  }
-}
+// String getWords(int number) {
+//   // cognitive complexity: +1, nesting level is now 1
+//   switch (number) {
+//     // cyclomatic complexity: +1
+//     case 1:
+//       return "one";
+//     // cyclomatic complexity: +1
+//     case 2:
+//       return "a couple";
+//     // cyclomatic complexity: +1
+//     case 3:
+//       return "a few";
+//     default:
+//       return "lots";
+//   }
+// }
 // cyclomatic complexity: 4
 // cognitive complexity: 1
