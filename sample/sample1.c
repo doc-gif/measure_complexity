@@ -1,5 +1,5 @@
-#ifdef
-#fi
+#ifdef _WIN32
+#endif
 
 // cyclomatic complexity: +1
 int main() {
