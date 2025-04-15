@@ -319,13 +319,15 @@ static void CsvTerminateLine(char* p, size_t size)
 }
 
 char* handle_quote_and_newline(char c, int n, char quote, CsvHandle handle, char* p) {
-    do {
-        if (c == quote) {
-            handle->quotes++;
-        } else if (c == '\n' && !(handle->quotes & 1)) {
-            return p + n;
-        }
-    } while (0);
+label1:
+    if (c == quote) {
+        handle->quotes++;
+    } else if (c == '\n' && !(handle->quotes & 1)) {
+        return p + n;
+    }
+    if (0) {
+      goto label1;
+    }
 }
 
 static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
@@ -341,7 +343,8 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
     uint64_t* pd = (uint64_t*)p;
     uint64_t* pde = pd + (size / sizeof(uint64_t));
 
-    for (; pd < pde; pd++)
+label1:
+    if (pd < pde)
     {
         /* unpack 64bits to 8x8bits */
         char c0, c1, c2, c3, c4, c5, c6, c7;
@@ -363,14 +366,19 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
         handle_quote_and_newline(c5, 5, quote, handle, p);
         handle_quote_and_newline(c6, 6, quote, handle, p);
         handle_quote_and_newline(c7, 7, quote, handle, p);
+        pd++;
+        goto label1;
     }
     p = (char*)pde;
 #endif
-    
-    for (; p < end; p++)
+
+label2:
+    if (p < end)
     {
         char c0 = *p;
         handle_quote_and_newline(c0, 0, quote, handle, p);
+        p++;
+        goto label2;
     }
 
     return NULL;
@@ -382,68 +390,70 @@ char* CsvReadNextRow(CsvHandle handle)
     char* p = NULL;
     char* found = NULL;
 
-    do
+label1:
+    int err = CsvEnsureMapped(handle);
+    handle->context = NULL;
+
+    if (err == -EINVAL)
     {
-        int err = CsvEnsureMapped(handle);
-        handle->context = NULL;
-        
-        if (err == -EINVAL)
+        /* if this is n-th iteration
+         * return auxbuf (remaining bytes of the file) */
+        if (p == NULL)
+            goto label2;
+
+        return handle->auxbuf;
+    }
+    else if (err == -ENOMEM)
+    {
+        goto label2;
+    }
+
+    size = handle->size - handle->pos;
+    if (!size)
+        goto label2;
+
+    /* search this chunk for NL */
+    p = (char*)handle->mem + handle->pos;
+    found = CsvSearchLf(p, size, handle);
+
+    if (found)
+    {
+        /* prepare position for next iteration */
+        size = (size_t)(found - p) + 1;
+        handle->pos += size;
+        handle->quotes = 0;
+
+        if (handle->auxbufPos)
         {
-            /* if this is n-th iteration
-             * return auxbuf (remaining bytes of the file) */
-            if (p == NULL)
-                break;
+            if (!CsvChunkToAuxBuf(handle, p, size))
+                goto label2;
 
-            return handle->auxbuf;
-        }
-        else if (err == -ENOMEM)
-        {
-            break;
-        }
-        
-        size = handle->size - handle->pos;
-        if (!size)
-            break;
-
-        /* search this chunk for NL */
-        p = (char*)handle->mem + handle->pos;
-        found = CsvSearchLf(p, size, handle);
-
-        if (found)
-        {
-            /* prepare position for next iteration */
-            size = (size_t)(found - p) + 1;
-            handle->pos += size;
-            handle->quotes = 0;
-            
-            if (handle->auxbufPos)
-            {
-                if (!CsvChunkToAuxBuf(handle, p, size))
-                    break;
-                
-                p = handle->auxbuf;
-                size = handle->auxbufPos;
-            }
-
-            /* reset auxbuf position */
-            handle->auxbufPos = 0;
-
-            /* terminate line */
-            CsvTerminateLine(p + size - 1, size);
-            return p;
-        }
-        else
-        {
-            /* reset on next iteration */
-            handle->pos = handle->size;
+            p = handle->auxbuf;
+            size = handle->auxbufPos;
         }
 
-        /* correctly process boundries, storing
-         * remaning bytes in aux buffer */
-        if (!CsvChunkToAuxBuf(handle, p, size))
-            break;
+        /* reset auxbuf position */
+        handle->auxbufPos = 0;
 
-    } while (!found);
+        /* terminate line */
+        CsvTerminateLine(p + size - 1, size);
+        return p;
+    }
+    else
+    {
+        /* reset on next iteration */
+        handle->pos = handle->size;
+    }
+
+    /* correctly process boundries, storing
+     * remaning bytes in aux buffer */
+    if (!CsvChunkToAuxBuf(handle, p, size))
+        goto label2;
+
+    if (!found) {
+        goto label1;
+    }
+label2:
 
     return NULL;
 }
@@ -462,7 +472,8 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
     if (quoted)
         p++;
 
-    for (; *p; p++, d++)
+label1:
+    if (*p)
     {
         /* double quote is present if (1) */
         int dq = 0;
@@ -482,17 +493,20 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
         if (quoted && !dq)
         {
             if (*p == handle->quote)
-                break;
+                goto label2;
         }
         else if (*p == handle->delim)
         {
-            break;
+            goto label2;
         }
 
         /* copy if required */
         if (d != p)
             *d = *p;
+        p++, d++;
+        goto label1;
     }
+label2:
     
     if (!*p)
     {
@@ -508,9 +522,16 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
         *d = '\0';
         if (quoted)
         {
-            for (p++; *p; p++)
+          p++;
+        label3:
+            if (*p) {
                 if (*p == handle->delim)
-                    break;
+                    goto label4;
+
+                p++;
+                goto label3;
+            }
+        label4:
 
             if (*p)
                 p++;
