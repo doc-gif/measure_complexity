@@ -5,4 +5,5 @@ set(CMAKE_C_STANDARD 11)
 
 add_executable(measure_complexity
         cJSON/cJSON_Utils.c
-        csv/csv.c)
+        csv/csv.c
+        sample/sample1.c)
