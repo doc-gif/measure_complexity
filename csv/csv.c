@@ -319,12 +319,13 @@ static void CsvTerminateLine(char* p, size_t size)
 }
 
 char* handle_quote_and_newline(char c, int n, char quote, CsvHandle handle, char* p) {
-    if (c == quote) {
-        handle->quotes++;
-    } else if (c == '\n' && !(handle->quotes & 1)) {
-        return p + n;
-    }
-    return NULL;
+    do {
+        if (c == quote) {
+            handle->quotes++;
+        } else if (c == '\n' && !(handle->quotes & 1)) {
+            return p + n;
+        }
+    } while (0);
 }
 
 static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
