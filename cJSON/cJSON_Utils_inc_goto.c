@@ -364,46 +364,6 @@ label1:
         goto label1;
     }
 
-label4:
-    if ((pointer[0] == '/') && (current_element != NULL))
-    {
-        pointer++;
-        if (cJSON_IsArray(current_element))
-        {
-            size_t index = 0;
-            if (!decode_array_index_from_pointer((const unsigned char*)pointer, &index))
-            {
-                return NULL;
-            }
-
-            current_element = get_array_item(current_element, index);
-        }
-        else if (cJSON_IsObject(current_element))
-        {
-            current_element = current_element->child;
-            /* GetObjectItem. */
-        label5:
-            if ((current_element != NULL) && !compare_pointers((unsigned char*)current_element->string, (const unsigned char*)pointer, case_sensitive))
-            {
-                current_element = current_element->next;
-                goto label5;
-            }
-        }
-        else
-        {
-            return NULL;
-        }
-
-        /* skip to the next path token or end of string */
-    label6:
-        if ((pointer[0] != '\0') && (pointer[0] != '/'))
-        {
-            pointer++;
-            goto label6;
-        }
-        goto label1;
-    }
-
     return current_element;
 }
 
