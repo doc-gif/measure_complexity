@@ -21,7 +21,7 @@ int sumOfPrimes(int max) {
 // cyclomatic complexity: 4
 // cognitive complexity: 6
 
-// cyclomatic complexity: +1
+cyclomatic complexity: +1
 String getWords(int number) {
   // cognitive complexity: +1, nesting level is now 1
   switch (number) {
@@ -34,9 +34,9 @@ String getWords(int number) {
     // cyclomatic complexity: +1
     case 3:
       return "a few";
-    default:
-      return "lots";
+    // default:
+      // return "lots";
   }
 }
-// cyclomatic complexity: 4
-// cognitive complexity: 1
+cyclomatic complexity: 4
+cognitive complexity: 1
