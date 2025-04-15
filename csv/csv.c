@@ -274,19 +274,7 @@ static int CsvEnsureMapped(CsvHandle handle)
 
     newSize = handle->mapSize + handle->blockSize;
     if (MapMem(handle))
-    {
-        handle->pos = 0;
-        handle->mapSize = newSize;
-
-        /* read only up to filesize:
-         * 1. mapped block size is < then filesize: (use blocksize)
-         * 2. mapped block size is > then filesize: (use remaining filesize) */
-        handle->size = handle->blockSize;
-        if (handle->mapSize > handle->fileSize)
-            handle->size = (size_t)(handle->fileSize % handle->blockSize);
-
-        goto label1;
-    }
+        goto label4;
 
     goto label3;
 
@@ -298,6 +286,19 @@ label2:
 
 label3:
     return -ENOMEM;
+
+label4:
+    handle->pos = 0;
+    handle->mapSize = newSize;
+
+    /* read only up to filesize:
+     * 1. mapped block size is < then filesize: (use blocksize)
+     * 2. mapped block size is > then filesize: (use remaining filesize) */
+    handle->size = handle->blockSize;
+    if (handle->mapSize > handle->fileSize)
+        handle->size = (size_t)(handle->fileSize % handle->blockSize);
+
+    return 0;
 }
 
 static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
@@ -313,16 +314,16 @@ static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
         handle->auxbufSize = newSize;
     }
 
-    memcpy((char*)handle->auxbuf + handle->auxbufPos, p, size);
-    handle->auxbufPos += size;
-
-    *(char*)((char*)handle->auxbuf + handle->auxbufPos) = '\0';
     goto label2;
 
 label1:
     return NULL;
 
 label2:
+    memcpy((char*)handle->auxbuf + handle->auxbufPos, p, size);
+    handle->auxbufPos += size;
+
+    *(char*)((char*)handle->auxbuf + handle->auxbufPos) = '\0';
     return handle->auxbuf;
 }
 
@@ -445,12 +446,6 @@ char* CsvReadNextRow(CsvHandle handle)
                 p = handle->auxbuf;
                 size = handle->auxbufPos;
             }
-
-            /* reset auxbuf position */
-            handle->auxbufPos = 0;
-
-            /* terminate line */
-            CsvTerminateLine(p + size - 1, size);
             goto label2;
         }
         else
@@ -472,6 +467,11 @@ label1:
     return handle->auxbuf;
 
 label2:
+    /* reset auxbuf position */
+    handle->auxbufPos = 0;
+
+    /* terminate line */
+    CsvTerminateLine(p + size - 1, size);
     return p;
 
 label3:
