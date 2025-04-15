@@ -100,7 +100,7 @@ CsvHandle CsvOpen2(const char* filename,
 
     CsvHandle handle = calloc(1, sizeof(struct CsvHandle_));
     if (!handle)
-        goto fail;
+        goto label1;
 
     /* set chars */
     handle->delim = delim;
@@ -110,7 +110,7 @@ CsvHandle CsvOpen2(const char* filename,
     /* page size */
     pageSize = sysconf(_SC_PAGESIZE);
     if (pageSize < 0)
-        goto fail;
+        goto label1;
 
     /* align to system page size */
     handle->blockSize = GET_PAGE_ALIGNED(BUFFER_WIDTH_APROX, pageSize);
@@ -118,19 +118,19 @@ CsvHandle CsvOpen2(const char* filename,
     /* open new fd */
     handle->fh = open(filename, O_RDONLY);
     if (handle->fh < 0)
-        goto fail;
+        goto label1;
 
     /* get real file size */
     if (fstat(handle->fh, &fs))
     {
        close(handle->fh);
-       goto fail;
+       goto label1;
     }
 
     handle->fileSize = fs.st_size;
     return handle;
 
-  fail:
+label1:
     free(handle);
     return NULL;
 }
@@ -176,7 +176,7 @@ CsvHandle CsvOpen2(const char* filename,
     size_t pageSize = 0;
     CsvHandle handle = calloc(1, sizeof(struct CsvHandle_));
     if (!handle)
-        return NULL;
+        goto label1;
 
     handle->delim = delim;
     handle->quote = quote;
@@ -193,27 +193,33 @@ CsvHandle CsvOpen2(const char* filename,
                             NULL);
 
     if (handle->fh == INVALID_HANDLE_VALUE)
-        goto fail;
+        goto label2;
 
     if (GetFileSizeEx(handle->fh, &fsize) == FALSE)
-        goto fail;
+        goto label2;
 
     handle->fileSize = fsize.QuadPart;
     if (!handle->fileSize)
-        goto fail;
+        goto label2;
 
     handle->fm = CreateFileMapping(handle->fh, NULL, PAGE_WRITECOPY, 0, 0, NULL);
     if (handle->fm == NULL)
-        goto fail;
+        goto label2;
 
-    return handle;
+    goto label3;
 
-fail:
+label1:
+    return NULL;
+
+label2:
     if (handle->fh != INVALID_HANDLE_VALUE)
         CloseHandle(handle->fh);
 
     free(handle);
     return NULL;
+
+label3:
+    return handle;
 }
 
 static void* MapMem(CsvHandle handle)
@@ -258,13 +264,13 @@ static int CsvEnsureMapped(CsvHandle handle)
 
     /* do not need to map */
     if (handle->pos < handle->size)
-        return 0;
+        goto label1;
 
     UnmapMem(handle);
 
     handle->mem = NULL;
     if (handle->mapSize >= handle->fileSize)
-        return -EINVAL;
+        goto label2;
 
     newSize = handle->mapSize + handle->blockSize;
     if (MapMem(handle))
@@ -279,9 +285,18 @@ static int CsvEnsureMapped(CsvHandle handle)
         if (handle->mapSize > handle->fileSize)
             handle->size = (size_t)(handle->fileSize % handle->blockSize);
 
-        return 0;
+        goto label1;
     }
 
+    goto label3;
+
+label1:
+    return 0;
+
+label2:
+    return -EINVAL;
+
+label3:
     return -ENOMEM;
 }
 
@@ -292,7 +307,7 @@ static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
     {
         void* mem = realloc(handle->auxbuf, newSize);
         if (!mem)
-            return NULL;
+            goto label1;
 
         handle->auxbuf = mem;
         handle->auxbufSize = newSize;
@@ -302,6 +317,12 @@ static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
     handle->auxbufPos += size;
 
     *(char*)((char*)handle->auxbuf + handle->auxbufPos) = '\0';
+    goto label2;
+
+label1:
+    return NULL;
+
+label2:
     return handle->auxbuf;
 }
 
@@ -394,7 +415,7 @@ char* CsvReadNextRow(CsvHandle handle)
             if (p == NULL)
                 break;
 
-            return handle->auxbuf;
+            goto label1;
         }
         else if (err == -ENOMEM)
         {
@@ -430,7 +451,7 @@ char* CsvReadNextRow(CsvHandle handle)
 
             /* terminate line */
             CsvTerminateLine(p + size - 1, size);
-            return p;
+            goto label2;
         }
         else
         {
@@ -445,6 +466,15 @@ char* CsvReadNextRow(CsvHandle handle)
 
     } while (!found);
 
+    goto label3;
+
+label1:
+    return handle->auxbuf;
+
+label2:
+    return p;
+
+label3:
     return NULL;
 }
 
@@ -498,7 +528,7 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
     {
         /* nothing to do */
         if (p == b)
-            return NULL;
+            goto label1;
 
         handle->context = p;
     }
@@ -522,5 +552,11 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
             handle->context = p + 1;
         }
     }
+    goto label2;
+
+label1:
+    return NULL;
+
+label2:
     return b;
 }
