@@ -319,13 +319,11 @@ static void CsvTerminateLine(char* p, size_t size)
 }
 
 char* handle_quote_and_newline(char c, int n, char quote, CsvHandle handle, char* p) {
-    do {
-        if (c == quote) {
-            handle->quotes++;
-        } else if (c == '\n' && !(handle->quotes & 1)) {
-            return p + n;
-        }
-    } while (0);
+    if (c == quote) {
+        handle->quotes++;
+    } else if (c == '\n' && !(handle->quotes & 1)) {
+        return p + n;
+    }
 }
 
 static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
@@ -344,33 +342,23 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
     for (; pd < pde; pd++)
     {
         /* unpack 64bits to 8x8bits */
-        char c0, c1, c2, c3, c4, c5, c6, c7;
         p = (char*)pd;
-        c0 = p[0];
-        c1 = p[1];
-        c2 = p[2];
-        c3 = p[3];
-        c4 = p[4];
-        c5 = p[5];
-        c6 = p[6];
-        c7 = p[7];
-
-        handle_quote_and_newline(c0, 0, quote, handle, p);
-        handle_quote_and_newline(c1, 1, quote, handle, p);
-        handle_quote_and_newline(c2, 2, quote, handle, p);
-        handle_quote_and_newline(c3, 3, quote, handle, p);
-        handle_quote_and_newline(c4, 4, quote, handle, p);
-        handle_quote_and_newline(c5, 5, quote, handle, p);
-        handle_quote_and_newline(c6, 6, quote, handle, p);
-        handle_quote_and_newline(c7, 7, quote, handle, p);
+        for (int i = 0; i < 8; i++) {
+            char* result = handle_quote_and_newline(p[i], i, quote, handle, p);
+            if (result != NULL) {
+                return result;
+            }
+        }
     }
     p = (char*)pde;
 #endif
     
     for (; p < end; p++)
     {
-        char c0 = *p;
-        handle_quote_and_newline(c0, 0, quote, handle, p);
+        char* result = handle_quote_and_newline(*p, 0, quote, handle, p);
+        if (result != NULL) {
+            return result;
+        }
     }
 
     return NULL;
