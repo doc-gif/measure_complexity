@@ -305,32 +305,11 @@ static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
     return handle->auxbuf;
 }
 
-static void CsvTerminateLine(char* p, size_t size)
-{
-    /* we do support standard POSIX LF sequence
-     * and Windows CR LF sequence.
-     * old non POSIX Mac OS CR is not supported.
-     */
-    char* res = p;
-    if (size >= 2 && p[-1] == '\r')
-        --res;
-
-    *res = 0;
-}
-
-char* handle_quote_and_newline(char c, int n, char quote, CsvHandle handle, char* p)
-{
-    if (c == quote)
-    {
+char* handle_quote_and_newline(char c, int n, char quote, CsvHandle handle, char* p) {
+    if (c == quote) {
         handle->quotes++;
-    }
-    else if (c == '\n' && !(handle->quotes & 1))
-    {
+    } else if (c == '\n' && !(handle->quotes & 1)) {
         return p + n;
-    }
-    else
-    {
-      /* do nothing */
     }
 }
 
@@ -360,7 +339,7 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
     }
     p = (char*)pde;
 #endif
-
+    
     for (; p < end; p++)
     {
         char* result = handle_quote_and_newline(*p, 0, quote, handle, p);
@@ -396,10 +375,6 @@ char* CsvReadNextRow(CsvHandle handle)
         {
             break;
         }
-        else
-        {
-            /* do nothing for the others. */
-        }
         
         size = handle->size - handle->pos;
         if (!size)
@@ -429,7 +404,12 @@ char* CsvReadNextRow(CsvHandle handle)
             handle->auxbufPos = 0;
 
             /* terminate line */
-            CsvTerminateLine(p + size - 1, size);
+            char* res = p + size - 1;
+            if (size >= 2 && p[-1] == '\r')
+                --res;
+
+            *res = 0;
+
             return p;
         }
         else
@@ -487,10 +467,6 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
         else if (*p == handle->delim)
         {
             break;
-        }
-        else
-        {
-            /* do nothing for the others. */
         }
 
         /* copy if required */
