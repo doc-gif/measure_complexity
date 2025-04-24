@@ -120,41 +120,41 @@ static cJSON_bool compare_double(double a, double b)
 
 // used by remain
 /* Compare the next path element of two JSON pointers, two NULL pointers are considered unequal: */
-static cJSON_bool compare_pointers(const unsigned char *name, const unsigned char *pointer, const cJSON_bool case_sensitive)
-{
-    if ((name == NULL) || (pointer == NULL))
-    {
-        return false;
-    }
-
-    for (; (*name != '\0') && (*pointer != '\0') && (*pointer != '/'); (void)name++, pointer++) /* compare until next '/' */
-    {
-        if (*pointer == '~')
-        {
-            /* check for escaped '~' (~0) and '/' (~1) */
-            if (((pointer[1] != '0') || (*name != '~')) && ((pointer[1] != '1') || (*name != '/')))
-            {
-                /* invalid escape sequence or wrong character in *name */
-                return false;
-            }
-            else
-            {
-                pointer++;
-            }
-        }
-        else if ((!case_sensitive && (tolower(*name) != tolower(*pointer))) || (case_sensitive && (*name != *pointer)))
-        {
-            return false;
-        }
-    }
-    if (((*pointer != 0) && (*pointer != '/')) != (*name != 0))
-    {
-        /* one string has ended, the other not */
-        return false;;
-    }
-
-    return true;
-}
+// static cJSON_bool compare_pointers(const unsigned char *name, const unsigned char *pointer, const cJSON_bool case_sensitive)
+// {
+//     if ((name == NULL) || (pointer == NULL))
+//     {
+//         return false;
+//     }
+//
+//     for (; (*name != '\0') && (*pointer != '\0') && (*pointer != '/'); (void)name++, pointer++) /* compare until next '/' */
+//     {
+//         if (*pointer == '~')
+//         {
+//             /* check for escaped '~' (~0) and '/' (~1) */
+//             if (((pointer[1] != '0') || (*name != '~')) && ((pointer[1] != '1') || (*name != '/')))
+//             {
+//                 /* invalid escape sequence or wrong character in *name */
+//                 return false;
+//             }
+//             else
+//             {
+//                 pointer++;
+//             }
+//         }
+//         else if ((!case_sensitive && (tolower(*name) != tolower(*pointer))) || (case_sensitive && (*name != *pointer)))
+//         {
+//             return false;
+//         }
+//     }
+//     if (((*pointer != 0) && (*pointer != '/')) != (*name != 0))
+//     {
+//         /* one string has ended, the other not */
+//         return false;;
+//     }
+//
+//     return true;
+// }
 
 // maybe deleted
 /* calculate the length of a string if encoded as JSON pointer with ~0 and ~1 escape sequences */
@@ -268,17 +268,17 @@ CJSON_PUBLIC(char *) cJSONUtils_FindPointerFromObjectTo(const cJSON * const obje
 
 // maybe deleted
 /* non broken version of cJSON_GetArrayItem */
-static cJSON *get_array_item(const cJSON *array, size_t item)
-{
-    cJSON *child = array ? array->child : NULL;
-    while ((child != NULL) && (item > 0))
-    {
-        item--;
-        child = child->next;
-    }
-
-    return child;
-}
+// static cJSON *get_array_item(const cJSON *array, size_t item)
+// {
+//     cJSON *child = array ? array->child : NULL;
+//     while ((child != NULL) && (item > 0))
+//     {
+//         item--;
+//         child = child->next;
+//     }
+//
+//     return child;
+// }
 
 // used by remain
 static cJSON_bool decode_array_index_from_pointer(const unsigned char * const pointer, size_t * const index)
@@ -309,53 +309,53 @@ static cJSON_bool decode_array_index_from_pointer(const unsigned char * const po
 }
 
 // remain
-static cJSON *get_item_from_pointer(cJSON * const object, const char * pointer, const cJSON_bool case_sensitive)
-{
-    cJSON *current_element = object;
-
-    if (pointer == NULL)
-    {
-        return NULL;
-    }
-
-    /* follow path of the pointer */
-    while ((pointer[0] == '/') && (current_element != NULL))
-    {
-        pointer++;
-        if (cJSON_IsArray(current_element))
-        {
-            size_t index = 0;
-            if (!decode_array_index_from_pointer((const unsigned char*)pointer, &index))
-            {
-                return NULL;
-            }
-
-            // ~| nl=3
-            current_element = get_array_item(current_element, index);
-        }
-        else if (cJSON_IsObject(current_element))
-        {
-            current_element = current_element->child;
-            /* GetObjectItem. */
-            while ((current_element != NULL) && !compare_pointers((unsigned char*)current_element->string, (const unsigned char*)pointer, case_sensitive))
-            {
-                current_element = current_element->next;
-            }
-        }
-        else
-        {
-            return NULL;
-        }
-
-        /* skip to the next path token or end of string */
-        while ((pointer[0] != '\0') && (pointer[0] != '/'))
-        {
-            pointer++;
-        }
-    }
-
-    return current_element;
-}
+// static cJSON *get_item_from_pointer(cJSON * const object, const char * pointer, const cJSON_bool case_sensitive)
+// {
+//     cJSON *current_element = object;
+//
+//     if (pointer == NULL)
+//     {
+//         return NULL;
+//     }
+//
+//     /* follow path of the pointer */
+//     while ((pointer[0] == '/') && (current_element != NULL))
+//     {
+//         pointer++;
+//         if (cJSON_IsArray(current_element))
+//         {
+//             size_t index = 0;
+//             if (!decode_array_index_from_pointer((const unsigned char*)pointer, &index))
+//             {
+//                 return NULL;
+//             }
+//
+//             // ~| nl=2
+//             current_element = get_array_item(current_element, index);
+//         }
+//         else if (cJSON_IsObject(current_element))
+//         {
+//             current_element = current_element->child;
+//             /* GetObjectItem. */
+//             while ((current_element != NULL) && !compare_pointers((unsigned char*)current_element->string, (const unsigned char*)pointer, case_sensitive))
+//             {
+//                 current_element = current_element->next;
+//             }
+//         }
+//         else
+//         {
+//             return NULL;
+//         }
+//
+//         /* skip to the next path token or end of string */
+//         while ((pointer[0] != '\0') && (pointer[0] != '/'))
+//         {
+//             pointer++;
+//         }
+//     }
+//
+//     return current_element;
+// }
 
 // used by remain
 /* JSON Patch implementation. */
