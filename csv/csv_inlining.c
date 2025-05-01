@@ -305,14 +305,6 @@ static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
     return handle->auxbuf;
 }
 
-char* handle_quote_and_newline(char c, int n, char quote, CsvHandle handle, char* p) {
-    if (c == quote) {
-        handle->quotes++;
-    } else if (c == '\n' && !(handle->quotes & 1)) {
-        return p + n;
-    }
-}
-
 static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
 {
     /* TODO: this can be greatly optimized by
@@ -331,7 +323,16 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
         /* unpack 64bits to 8x8bits */
         p = (char*)pd;
         for (int i = 0; i < 8; i++) {
-            char* result = handle_quote_and_newline(p[i], i, quote, handle, p);
+            char* result = NULL;
+            char c = p[i];
+            int n = i;
+
+            if (c == quote) {
+                handle->quotes++;
+            } else if (c == '\n' && !(handle->quotes & 1)) {
+                result = p + n;
+            }
+
             if (result != NULL) {
                 return result;
             }
@@ -342,7 +343,16 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
     
     for (; p < end; p++)
     {
-        char* result = handle_quote_and_newline(*p, 0, quote, handle, p);
+        char* result = NULL;
+        char c = *p;
+        int n = 0;
+
+        if (c == quote) {
+            handle->quotes++;
+        } else if (c == '\n' && !(handle->quotes & 1)) {
+            result = p + n;
+        }
+
         if (result != NULL) {
             return result;
         }
@@ -393,7 +403,25 @@ char* CsvReadNextRow(CsvHandle handle)
             
             if (handle->auxbufPos)
             {
-                if (!CsvChunkToAuxBuf(handle, p, size))
+                char* csv_chunk_to_aux_buf;
+                size_t newSize = handle->auxbufPos + size + 1;
+                if (handle->auxbufSize < newSize)
+                {
+                    void* mem = realloc(handle->auxbuf, newSize);
+                    if (!mem)
+                        return NULL;
+
+                    handle->auxbuf = mem;
+                    handle->auxbufSize = newSize;
+                }
+
+                memcpy((char*)handle->auxbuf + handle->auxbufPos, p, size);
+                handle->auxbufPos += size;
+
+                *(char*)((char*)handle->auxbuf + handle->auxbufPos) = '\0';
+                csv_chunk_to_aux_buf = handle->auxbuf;
+
+                if (!csv_chunk_to_aux_buf)
                     break;
                 
                 p = handle->auxbuf;
@@ -420,7 +448,24 @@ char* CsvReadNextRow(CsvHandle handle)
 
         /* correctly process boundries, storing
          * remaning bytes in aux buffer */
-        if (!CsvChunkToAuxBuf(handle, p, size))
+        char* csv_chunk_to_aux_buf;
+        size_t newSize = handle->auxbufPos + size + 1;
+        if (handle->auxbufSize < newSize)
+        {
+            void* mem = realloc(handle->auxbuf, newSize);
+            if (!mem)
+                return NULL;
+
+            handle->auxbuf = mem;
+            handle->auxbufSize = newSize;
+        }
+
+        memcpy((char*)handle->auxbuf + handle->auxbufPos, p, size);
+        handle->auxbufPos += size;
+
+        *(char*)((char*)handle->auxbuf + handle->auxbufPos) = '\0';
+        csv_chunk_to_aux_buf = handle->auxbuf;
+        if (!csv_chunk_to_aux_buf)
             break;
 
     } while (!found);
