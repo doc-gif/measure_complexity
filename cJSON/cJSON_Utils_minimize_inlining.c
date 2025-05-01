@@ -63,22 +63,6 @@
 #endif
 #define false ((cJSON_bool)0)
 
-static unsigned char* cJSONUtils_strdup(const unsigned char* const string)
-{
-    size_t length = 0;
-    unsigned char *copy = NULL;
-
-    length = strlen((const char*)string) + sizeof("");
-    copy = (unsigned char*) cJSON_malloc(length);
-    if (copy == NULL)
-    {
-        return NULL;
-    }
-    memcpy(copy, string, length);
-
-    return copy;
-}
-
 /* string comparison which doesn't consider NULL pointers equal */
 static int compare_strings(const unsigned char *string1, const unsigned char *string2, const cJSON_bool case_sensitive)
 {
@@ -106,29 +90,6 @@ static int compare_strings(const unsigned char *string1, const unsigned char *st
     }
 
     return tolower(*string1) - tolower(*string2);
-}
-
-/* securely comparison of floating-point variables */
-static cJSON_bool compare_double(double a, double b)
-{
-    double maxVal = fabs(a) > fabs(b) ? fabs(a) : fabs(b);
-    return (fabs(a - b) <= maxVal * DBL_EPSILON);
-}
-
-/* calculate the length of a string if encoded as JSON pointer with ~0 and ~1 escape sequences */
-static size_t pointer_encoded_length(const unsigned char *string)
-{
-    size_t length;
-    for (length = 0; *string != '\0'; (void)string++, length++)
-    {
-        /* character needs to be escaped? */
-        if ((*string == '~') || (*string == '/'))
-        {
-            length++;
-        }
-    }
-
-    return length;
 }
 
 /* copy a string while escaping '~' and '/' with ~0 and ~1 JSON pointer escape codes */
@@ -170,7 +131,19 @@ CJSON_PUBLIC(char *) cJSONUtils_FindPointerFromObjectTo(const cJSON * const obje
     if (object == target)
     {
         /* found */
-        return (char*)cJSONUtils_strdup((const unsigned char*)"");
+        const unsigned char* string = "";
+        size_t length = 0;
+        unsigned char *copy = NULL;
+
+        length = strlen((const char*)string) + sizeof("");
+        copy = (unsigned char*) cJSON_malloc(length);
+        if (copy == NULL)
+        {
+            return NULL;
+        }
+        memcpy(copy, string, length);
+
+        return (char*)copy;
     }
 
     /* recursively search all children of the object or array */
@@ -201,7 +174,18 @@ CJSON_PUBLIC(char *) cJSONUtils_FindPointerFromObjectTo(const cJSON * const obje
 
             if (cJSON_IsObject(object))
             {
-                unsigned char *full_pointer = (unsigned char*)cJSON_malloc(strlen((char*)target_pointer) + pointer_encoded_length((unsigned char*)current_child->string) + 2);
+                size_t pointer_encoded_length;
+                const unsigned char *string = (unsigned char*)current_child->string;
+                for (pointer_encoded_length = 0; *string != '\0'; (void)string++, pointer_encoded_length++)
+                {
+                    /* character needs to be escaped? */
+                    if ((*string == '~') || (*string == '/'))
+                    {
+                        pointer_encoded_length++;
+                    }
+                }
+
+                unsigned char *full_pointer = (unsigned char*)cJSON_malloc(strlen((char*)target_pointer) + pointer_encoded_length + 2);
                 full_pointer[0] = '/';
                 encode_string_as_pointer(full_pointer + 1, (unsigned char*)current_child->string);
                 strcat((char*)full_pointer, (char*)target_pointer);
@@ -332,15 +316,6 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
     return result;
 }
 
-static void sort_object(cJSON * const object, const cJSON_bool case_sensitive)
-{
-    if (object == NULL)
-    {
-        return;
-    }
-    object->child = sort_list(object->child, case_sensitive);
-}
-
 static void compose_patch(cJSON * const patches, const unsigned char * const operation, const unsigned char * const path, const unsigned char *suffix, const cJSON * const value)
 {
     cJSON *patch = NULL;
@@ -363,7 +338,17 @@ static void compose_patch(cJSON * const patches, const unsigned char * const ope
     }
     else
     {
-        size_t suffix_length = pointer_encoded_length(suffix);
+        size_t suffix_length;
+        const unsigned char *string = suffix;
+        for (suffix_length = 0; *string != '\0'; (void)string++, suffix_length++)
+        {
+            /* character needs to be escaped? */
+            if ((*string == '~') || (*string == '/'))
+            {
+                suffix_length++;
+            }
+        }
+
         size_t path_length = strlen((const char*)path);
         unsigned char *full_path = (unsigned char*)cJSON_malloc(path_length + suffix_length + sizeof("/"));
 
@@ -397,7 +382,13 @@ static void create_patches(cJSON * const patches, const unsigned char * const pa
     switch (from->type & 0xFF)
     {
         case cJSON_Number:
-            if ((from->valueint != to->valueint) || !compare_double(from->valuedouble, to->valuedouble))
+            cJSON_bool compared_double;
+            double a = from->valuedouble;
+            double b = to->valuedouble;
+
+            double maxVal = fabs(a) > fabs(b) ? fabs(a) : fabs(b);
+            compared_double = (fabs(a - b) <= maxVal * DBL_EPSILON);
+            if ((from->valueint != to->valueint) || !compared_double)
             {
                 compose_patch(patches, (const unsigned char*)"replace", path, NULL, to);
             }
@@ -459,8 +450,14 @@ static void create_patches(cJSON * const patches, const unsigned char * const pa
         {
             cJSON *from_child = NULL;
             cJSON *to_child = NULL;
-            sort_object(from, case_sensitive);
-            sort_object(to, case_sensitive);
+
+            if (from != NULL) {
+                from->child = sort_list(from->child, case_sensitive);
+            }
+
+            if (to != NULL) {
+                to->child = sort_list(to->child, case_sensitive);
+            }
 
             from_child = from->child;
             to_child = to->child;
@@ -485,7 +482,16 @@ static void create_patches(cJSON * const patches, const unsigned char * const pa
                 {
                     /* both object keys are the same */
                     size_t path_length = strlen((const char*)path);
-                    size_t from_child_name_length = pointer_encoded_length((unsigned char*)from_child->string);
+                    size_t from_child_name_length;
+                    const unsigned char *string = (unsigned char*)from_child->string;
+                    for (from_child_name_length = 0; *string != '\0'; (void)string++, from_child_name_length++)
+                    {
+                        /* character needs to be escaped? */
+                        if ((*string == '~') || (*string == '/'))
+                        {
+                            from_child_name_length++;
+                        }
+                    }
                     unsigned char *new_path = (unsigned char*)cJSON_malloc(path_length + from_child_name_length + sizeof("/"));
 
                     sprintf((char*)new_path, "%s/", path);
