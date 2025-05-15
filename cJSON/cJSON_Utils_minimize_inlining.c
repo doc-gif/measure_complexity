@@ -366,7 +366,7 @@ static void compose_patch(cJSON * const patches, const unsigned char * const ope
     cJSON_AddItemToArray(patches, patch);
 }
 
-static void create_patches(cJSON * const patches, const unsigned char * const path, cJSON * const from, cJSON * const to, const cJSON_bool case_sensitive)
+void create_patches(cJSON * const patches, const unsigned char * const path, cJSON * const from, cJSON * const to, const cJSON_bool case_sensitive)
 {
     if ((from == NULL) || (to == NULL))
     {
