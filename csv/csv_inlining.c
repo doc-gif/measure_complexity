@@ -285,27 +285,6 @@ static int CsvEnsureMapped(CsvHandle handle)
     return -ENOMEM;
 }
 
-static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
-{
-    void* mem;
-    size_t newSize = handle->auxbufPos + size + 1;
-    if (handle->auxbufSize < newSize)
-    {
-        mem = realloc(handle->auxbuf, newSize);
-        if (!mem)
-            return NULL;
-
-        handle->auxbuf = mem;
-        handle->auxbufSize = newSize;
-    }
-
-    memcpy((char*)handle->auxbuf + handle->auxbufPos, p, size);
-    handle->auxbufPos += size;
-    
-    *(char*)((char*)handle->auxbuf + handle->auxbufPos) = '\0';
-    return handle->auxbuf;
-}
-
 char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
 {
     /* TODO: this can be greatly optimized by
