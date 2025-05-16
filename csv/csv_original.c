@@ -54,7 +54,7 @@ struct CsvHandle_
     size_t auxbufPos;
     size_t quotes;
     void* auxbuf;
-    
+
 #if defined ( __unix__ )
     int fh;
 #elif defined ( _WIN32 )
@@ -114,7 +114,7 @@ CsvHandle CsvOpen2(const char* filename,
 
     /* align to system page size */
     handle->blockSize = GET_PAGE_ALIGNED(BUFFER_WIDTH_APROX, pageSize);
-    
+
     /* open new fd */
     handle->fh = open(filename, O_RDONLY);
     if (handle->fh < 0)
@@ -126,10 +126,10 @@ CsvHandle CsvOpen2(const char* filename,
        close(handle->fh);
        goto fail;
     }
-    
+
     handle->fileSize = fs.st_size;
     return handle;
-    
+
   fail:
     free(handle);
     return NULL;
@@ -184,12 +184,12 @@ CsvHandle CsvOpen2(const char* filename,
 
     GetSystemInfo(&info);
     handle->blockSize = GET_PAGE_ALIGNED(BUFFER_WIDTH_APROX, info.dwPageSize);
-    handle->fh = CreateFile(filename, 
-                            GENERIC_READ, 
-                            FILE_SHARE_READ, 
-                            NULL, 
-                            OPEN_EXISTING, 
-                            FILE_ATTRIBUTE_NORMAL, 
+    handle->fh = CreateFile(filename,
+                            GENERIC_READ,
+                            FILE_SHARE_READ,
+                            NULL,
+                            OPEN_EXISTING,
+                            FILE_ATTRIBUTE_NORMAL,
                             NULL);
 
     if (handle->fh == INVALID_HANDLE_VALUE)
@@ -222,7 +222,7 @@ static void* MapMem(CsvHandle handle)
     if (handle->mapSize + size > handle->fileSize)
         size = 0;  /* last chunk, extend to file mapping max */
 
-    handle->mem = MapViewOfFileEx(handle->fm, 
+    handle->mem = MapViewOfFileEx(handle->fm,
                                   FILE_MAP_COPY,
                                   (DWORD)(handle->mapSize >> 32),
                                   (DWORD)(handle->mapSize & 0xFFFFFFFF),
@@ -255,12 +255,12 @@ void CsvClose(CsvHandle handle)
 static int CsvEnsureMapped(CsvHandle handle)
 {
     file_off_t newSize;
-    
+
     /* do not need to map */
     if (handle->pos < handle->size)
         return 0;
 
-    UnmapMem(handle);  
+    UnmapMem(handle);
 
     handle->mem = NULL;
     if (handle->mapSize >= handle->fileSize)
@@ -278,20 +278,19 @@ static int CsvEnsureMapped(CsvHandle handle)
         handle->size = handle->blockSize;
         if (handle->mapSize > handle->fileSize)
             handle->size = (size_t)(handle->fileSize % handle->blockSize);
-        
+
         return 0;
     }
-    
+
     return -ENOMEM;
 }
 
 static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
 {
-    void* mem;
     size_t newSize = handle->auxbufPos + size + 1;
     if (handle->auxbufSize < newSize)
     {
-        mem = realloc(handle->auxbuf, newSize);
+        void* mem = realloc(handle->auxbuf, newSize);
         if (!mem)
             return NULL;
 
@@ -301,7 +300,7 @@ static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
 
     memcpy((char*)handle->auxbuf + handle->auxbufPos, p, size);
     handle->auxbufPos += size;
-    
+
     *(char*)((char*)handle->auxbuf + handle->auxbufPos) = '\0';
     return handle->auxbuf;
 }
@@ -319,14 +318,14 @@ static void CsvTerminateLine(char* p, size_t size)
     *res = 0;
 }
 
-char* handle_quote_and_newline(char c, int n, char quote, CsvHandle handle, char* p) {
-    if (c == quote) {
-        handle->quotes++;
-    } else if (c == '\n' && !(handle->quotes & 1)) {
-        return p + n;
-    }
-    return NULL;
-}
+#define CSV_QUOTE_BR(c, n) \
+    do \
+        if (c##n == quote)                              \
+            handle->quotes++;                           \
+        else if (c##n == '\n' && !(handle->quotes & 1)) \
+            return p + n;                               \
+    while (0)
+
 
 char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
 {
@@ -334,7 +333,6 @@ char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
      * using modern SIMD instructions, but for now
      * we only fetch 8Bytes "at once"
      */
-    char* res;
     char* end = p + size;
     char quote = handle->quote;
 
@@ -345,23 +343,33 @@ char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
     for (; pd < pde; pd++)
     {
         /* unpack 64bits to 8x8bits */
+        char c0, c1, c2, c3, c4, c5, c6, c7;
         p = (char*)pd;
-        for (int i = 0; i < 8; i++)
-        {
-            res = handle_quote_and_newline(p[i], i, quote, handle, p);
-            if (res != NULL) {
-                return res;
-            }
-        }
+        c0 = p[0];
+        c1 = p[1];
+        c2 = p[2];
+        c3 = p[3];
+        c4 = p[4];
+        c5 = p[5];
+        c6 = p[6];
+        c7 = p[7];
+
+        CSV_QUOTE_BR(c, 0);
+        CSV_QUOTE_BR(c, 1);
+        CSV_QUOTE_BR(c, 2);
+        CSV_QUOTE_BR(c, 3);
+        CSV_QUOTE_BR(c, 4);
+        CSV_QUOTE_BR(c, 5);
+        CSV_QUOTE_BR(c, 6);
+        CSV_QUOTE_BR(c, 7);
     }
     p = (char*)pde;
 #endif
+
     for (; p < end; p++)
     {
-        res = handle_quote_and_newline(*p, 0, quote, handle, p);
-        if (res != NULL) {
-            return res;
-        }
+        char c0 = *p;
+        CSV_QUOTE_BR(c, 0);
     }
 
     return NULL;
@@ -369,16 +377,15 @@ char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
 
 char* CsvReadNextRow(CsvHandle handle)
 {
-    int err;
+    size_t size;
     char* p = NULL;
     char* found = NULL;
-    size_t size;
 
     do
     {
-        err = CsvEnsureMapped(handle);
+        int err = CsvEnsureMapped(handle);
         handle->context = NULL;
-        
+
         if (err == -EINVAL)
         {
             /* if this is n-th iteration
@@ -392,7 +399,7 @@ char* CsvReadNextRow(CsvHandle handle)
         {
             break;
         }
-        
+
         size = handle->size - handle->pos;
         if (!size)
             break;
@@ -407,12 +414,12 @@ char* CsvReadNextRow(CsvHandle handle)
             size = (size_t)(found - p) + 1;
             handle->pos += size;
             handle->quotes = 0;
-            
+
             if (handle->auxbufPos)
             {
                 if (!CsvChunkToAuxBuf(handle, p, size))
                     break;
-                
+
                 p = handle->auxbuf;
                 size = handle->auxbufPos;
             }
@@ -458,7 +465,7 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
     {
         /* double quote is present if (1) */
         int dq = 0;
-        
+
         /* skip escape */
         if (*p == handle->escape && p[1])
             p++;
@@ -485,7 +492,7 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
         if (d != p)
             *d = *p;
     }
-    
+
     if (!*p)
     {
         /* nothing to do */
@@ -506,7 +513,7 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
 
             if (*p)
                 p++;
-            
+
             handle->context = p;
         }
         else

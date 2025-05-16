@@ -306,7 +306,7 @@ static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
     return handle->auxbuf;
 }
 
-static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
+char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
 {
     /* TODO: this can be greatly optimized by
      * using modern SIMD instructions, but for now
@@ -366,7 +366,7 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
 char* CsvReadNextRow(CsvHandle handle)
 {
     int err;
-    char* csv_chunk_to_aux_buf, res;
+    char* csv_chunk_to_aux_buf, *res;
     char* p = NULL;
     char* found = NULL;
     void* mem;
@@ -376,7 +376,7 @@ char* CsvReadNextRow(CsvHandle handle)
     {
         err = CsvEnsureMapped(handle);
         handle->context = NULL;
-        
+
         if (err == -EINVAL)
         {
             /* if this is n-th iteration
@@ -390,7 +390,7 @@ char* CsvReadNextRow(CsvHandle handle)
         {
             break;
         }
-        
+
         size = handle->size - handle->pos;
         if (!size)
             break;
@@ -405,7 +405,7 @@ char* CsvReadNextRow(CsvHandle handle)
             size = (size_t)(found - p) + 1;
             handle->pos += size;
             handle->quotes = 0;
-            
+
             if (handle->auxbufPos)
             {
                 newSize = handle->auxbufPos + size + 1;
@@ -427,7 +427,7 @@ char* CsvReadNextRow(CsvHandle handle)
 
                 if (!csv_chunk_to_aux_buf)
                     break;
-                
+
                 p = handle->auxbuf;
                 size = handle->auxbufPos;
             }

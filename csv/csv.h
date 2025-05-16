@@ -29,6 +29,8 @@ CsvHandle CsvOpen2(const char* filename,
                    char quote,
                    char escape);
 
+char* CsvSearchLf(char* p, size_t size, CsvHandle handle);
+
 /**
  * closes csv handle, releasing all resources
  * @handle: csv handle

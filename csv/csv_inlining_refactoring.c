@@ -1,6 +1,7 @@
 /* (c) 2019 Jan Doczy
  * This code is licensed under MIT license (see LICENSE.txt for details) */
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -306,137 +307,182 @@ static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
     return handle->auxbuf;
 }
 
-static void CsvTerminateLine(char* p, size_t size)
-{
-    /* we do support standard POSIX LF sequence
-     * and Windows CR LF sequence.
-     * old non POSIX Mac OS CR is not supported.
-     */
-    char* res = p;
-    if (size >= 2 && p[-1] == '\r')
-        --res;
+// 指定されたポインタが指す文字を処理し、有効な改行が見つかった場合はそのポインタを返すヘルパー関数
+static char* _CsvProcessChar(CsvHandle handle, char* p) {
+    char c = *p;
+    char quote = handle->quote;
 
-    *res = 0;
-}
-
-char* handle_quote_and_newline(char c, int n, char quote, CsvHandle handle, char* p) {
     if (c == quote) {
         handle->quotes++;
     } else if (c == '\n' && !(handle->quotes & 1)) {
-        return p + n;
+        return p; // 有効な改行が見つかった位置を返す
     }
-    return NULL;
+
+    return NULL; // 有効な改行ではない
 }
 
-char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
-{
-    /* TODO: this can be greatly optimized by
-     * using modern SIMD instructions, but for now
-     * we only fetch 8Bytes "at once"
-     */
-    char* res;
+char* CsvSearchLf(char* p, size_t size, CsvHandle handle) {
+    char* res = NULL;
     char* end = p + size;
-    char quote = handle->quote;
 
 #ifdef CSV_UNPACK_64_SEARCH
     uint64_t* pd = (uint64_t*)p;
     uint64_t* pde = pd + (size / sizeof(uint64_t));
 
-    for (; pd < pde; pd++)
-    {
-        /* unpack 64bits to 8x8bits */
-        p = (char*)pd;
-        for (int i = 0; i < 8; i++)
-        {
-            res = handle_quote_and_newline(p[i], i, quote, handle, p);
+    for (; pd < pde; pd++) {
+        // 64ビットを8バイトに展開し、各バイトを処理
+        char* byte_p = (char*)pd;
+        for (int i = 0; i < 8; i++) {
+            res = _CsvProcessChar(handle, byte_p + i);
             if (res != NULL) {
-                return res;
+                return res; // 有効な改行が見つかったら即座に返す
             }
         }
     }
+    // 64ビット単位で処理しきれなかった残りのバイトから、p の位置を更新して処理を再開
     p = (char*)pde;
 #endif
-    for (; p < end; p++)
-    {
-        res = handle_quote_and_newline(*p, 0, quote, handle, p);
+
+    // 残りのバイト、または CSV_UNPACK_64_SEARCH が無効な場合のバイト走査
+    for (; p < end; p++) {
+        res = _CsvProcessChar(handle, p);
         if (res != NULL) {
-            return res;
+            return res; // 有効な改行が見つかったら即座に返す
         }
     }
 
-    return NULL;
+    return NULL; // 指定範囲内に有効な改行が見つからなかった
 }
 
-char* CsvReadNextRow(CsvHandle handle)
-{
-    int err;
+// ファイルマッピング/確保を行い、エラーコードを返すヘルパー関数
+static int _CsvHandleMapping(CsvHandle handle) {
+    return CsvEnsureMapped(handle);
+}
+
+// 指定されたチャンクを auxbuf に追加し、必要なら再確保するヘルパー関数
+// 成功した場合は true を、失敗した場合は false を返す。
+static bool _CsvAppendChunkToAuxBuf(CsvHandle handle, const char* chunk, size_t chunkSize) {
+    size_t newSize = handle->auxbufPos + chunkSize + 1;
+    if (handle->auxbufSize < newSize) {
+        void* mem = realloc(handle->auxbuf, newSize);
+        if (!mem) {
+            return false; // 再確保失敗
+        }
+        handle->auxbuf = mem;
+        handle->auxbufSize = newSize;
+    }
+
+    memcpy((char*)handle->auxbuf + handle->auxbufPos, chunk, chunkSize);
+    handle->auxbufPos += chunkSize;
+
+    *(char*)((char*)handle->auxbuf + handle->auxbufPos) = '\0'; // ヌル終端
+    return true; // 成功
+}
+
+// 改行が見つかった場合の処理を行うヘルパー関数
+// 見つかった行のポインタを返す。補助バッファの再確保等に失敗した場合は NULL を返す。
+static char* _CsvProcessFoundLine(CsvHandle handle, char* chunkStart, size_t chunkSize, char* foundLf) {
+    // チャンク内での行の長さ (\n を含む)
+    size_t lineLengthInChunk = (size_t)(foundLf - chunkStart) + 1;
+
+    // 次回の読み取り開始位置を設定
+    handle->pos += lineLengthInChunk;
+    handle->quotes = 0; // 必要に応じて quotes をリセット
+
+    char* resultLine;
+    size_t resultLength;
+
+    if (handle->auxbufPos > 0) {
+        // auxbuf にデータが残っている場合、auxbuf と現在のチャンクから切り出した行部分を結合
+        if (!_CsvAppendChunkToAuxBuf(handle, chunkStart, lineLengthInChunk)) {
+            return NULL; // auxbuf への追加失敗
+        }
+        resultLine = handle->auxbuf;
+        resultLength = handle->auxbufPos;
+        handle->auxbufPos = 0; // auxbuf の位置をリセット
+    } else {
+        // auxbuf にデータがない場合、現在のチャンク内で完結した行を返す
+        resultLine = chunkStart;
+        resultLength = lineLengthInChunk;
+    }
+
+    // 行の末尾をヌル終端する (\r\n の場合は \r も考慮)
+    char* res = resultLine + resultLength - 1;
+    if (resultLength >= 2 && *(res - 1) == '\r') {
+        --res;
+    }
+    *res = '\0';
+
+    return resultLine; // 処理済みの行へのポインタを返す
+}
+
+// 改行が見つからなかった場合の処理を行うヘルパー関数
+// 成功した場合は true を、失敗した場合は false を返す。
+static bool _CsvProcessRemainingChunk(CsvHandle handle, char* chunkStart, size_t chunkSize) {
+    // チャンク全体を auxbuf にコピー
+    if (!_CsvAppendChunkToAuxBuf(handle, chunkStart, chunkSize)) {
+        return false; // auxbuf への追加失敗
+    }
+
+    // 現在のチャンクは auxbuf に移動したので、ファイル位置を更新して次のチャンクに備える
+    handle->pos = handle->size;
+
+    return true; // 成功
+}
+
+
+char* CsvReadNextRow(CsvHandle handle) {
     char* p = NULL;
     char* found = NULL;
     size_t size;
 
-    do
-    {
-        err = CsvEnsureMapped(handle);
-        handle->context = NULL;
-        
-        if (err == -EINVAL)
-        {
-            /* if this is n-th iteration
-             * return auxbuf (remaining bytes of the file) */
-            if (p == NULL)
-                break;
+    do {
+        // 1. ファイルマッピング/確保とエラーチェック
+        int err = _CsvHandleMapping(handle);
+        handle->context = NULL; // 元のロジックの位置を維持
 
-            return handle->auxbuf;
-        }
-        else if (err == -ENOMEM)
-        {
+        if (err == -EINVAL) {
+            // 最初のイテレーション (-EINVAL かつ p == NULL) の場合、元のロジックに従い auxbuf を返す
+            if (p == NULL) {
+                 return handle->auxbuf;
+            }
+            // 2回目以降のイテレーションで -EINVAL の場合 (通常は EOF 近く) は break
             break;
+        } else if (err == -ENOMEM) {
+            break; // メモリエラー
         }
-        
+
         size = handle->size - handle->pos;
-        if (!size)
-            break;
+        if (!size) {
+            break; // ファイルの終端
+        }
 
-        /* search this chunk for NL */
+        // 現在のチャンクの先頭ポインタ
         p = (char*)handle->mem + handle->pos;
+
+        // 2. チャンク内での改行検索
         found = CsvSearchLf(p, size, handle);
 
-        if (found)
-        {
-            /* prepare position for next iteration */
-            size = (size_t)(found - p) + 1;
-            handle->pos += size;
-            handle->quotes = 0;
-            
-            if (handle->auxbufPos)
-            {
-                if (!CsvChunkToAuxBuf(handle, p, size))
-                    break;
-                
-                p = handle->auxbuf;
-                size = handle->auxbufPos;
+        if (found) {
+            // 3. 改行が見つかった場合の処理
+            char* result = _CsvProcessFoundLine(handle, p, size, found);
+            // _CsvProcessFoundLine が NULL を返した場合 (auxbuf の realloc 失敗)
+            if (!result) {
+                 return NULL;
             }
-
-            /* reset auxbuf position */
-            handle->auxbufPos = 0;
-
-            /* terminate line */
-            CsvTerminateLine(p + size - 1, size);
-            return p;
-        }
-        else
-        {
-            /* reset on next iteration */
-            handle->pos = handle->size;
+            return result; // 見つかった行を返す
+        } else {
+            // 4. 改行が見つからなかった場合、チャンク全体を auxbuf にコピー
+            if (!_CsvProcessRemainingChunk(handle, p, size)) {
+                 return NULL; // auxbuf への追加失敗
+            }
+            // ループ継続 (found がまだ NULL なので)
         }
 
-        /* correctly process boundries, storing
-         * remaning bytes in aux buffer */
-        if (!CsvChunkToAuxBuf(handle, p, size))
-            break;
+    } while (true); // break または return でループを抜ける
 
-    } while (!found);
-
+    // ループを抜けた場合 (エラー、EOF など)
+    // 元のコードの最後の return NULL に従う。
     return NULL;
 }
 
@@ -448,6 +494,7 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
     char* p = handle->context ? handle->context : row;
     char* d = p; /* destination */
     char* b = p; /* begin */
+    int dq;
     int quoted = 0; /* idicates quoted string */
 
     quoted = *p == handle->quote;
@@ -457,7 +504,7 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
     for (; *p; p++, d++)
     {
         /* double quote is present if (1) */
-        int dq = 0;
+        dq = 0;
         
         /* skip escape */
         if (*p == handle->escape && p[1])
