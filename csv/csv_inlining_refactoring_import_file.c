@@ -277,7 +277,15 @@ static int CsvEnsureMapped(CsvHandle handle)
          * 2. mapped block size is > then filesize: (use remaining filesize) */
         handle->size = handle->blockSize;
         if (handle->mapSize > handle->fileSize)
-            handle->size = (size_t)(handle->fileSize % handle->blockSize);
+            handle->size = (size_t)(handle->fileSize - (handle->mapSize - handle->blockSize)); // Corrected calculation
+            if (handle->size > handle->blockSize) handle->size = handle->blockSize; // Cap at block size
+            if (handle->mapSize > handle->fileSize && handle->fileSize > (handle->mapSize - handle->blockSize)) {
+                 handle->size = (size_t)(handle->fileSize - (handle->mapSize - handle->blockSize));
+            } else if (handle->mapSize > handle->fileSize && handle->fileSize <= (handle->mapSize - handle->blockSize)) {
+                handle->size = 0; // Should not happen with correct logic, but safeguard
+            } else {
+                 handle->size = handle->blockSize;
+            }
 
         return 0;
     }
@@ -285,77 +293,16 @@ static int CsvEnsureMapped(CsvHandle handle)
     return -ENOMEM;
 }
 
-static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
-{
-    void* mem;
-    size_t newSize = handle->auxbufPos + size + 1;
-    if (handle->auxbufSize < newSize)
-    {
-        mem = realloc(handle->auxbuf, newSize);
-        if (!mem)
-            return NULL;
-
-        handle->auxbuf = mem;
-        handle->auxbufSize = newSize;
+// Helper function to process a single character for newline/quote detection
+// Returns the pointer to the character if it's an unquoted newline, otherwise NULL.
+static char* process_char_for_newline(char* p, char c, CsvHandle handle) {
+    if (c == handle->quote) {
+        handle->quotes++;
+    } else if (c == '\n' && !(handle->quotes & 1)) {
+        return p; // Found unquoted newline
     }
-
-    memcpy((char*)handle->auxbuf + handle->auxbufPos, p, size);
-    handle->auxbufPos += size;
-
-    *(char*)((char*)handle->auxbuf + handle->auxbufPos) = '\0';
-    return handle->auxbuf;
+    return NULL; // No unquoted newline at this position
 }
-
-static char* search_lf_in_chunk(char* p, size_t size, CsvHandle handle)
-{
-    char* res = NULL;
-    char c;
-    char* end = p + size;
-    char quote = handle->quote;
-
-    for (; p < end; p++)
-    {
-        c = *p;
-
-        if (c == quote) {
-            handle->quotes++;
-        } else if (c == '\n' && !(handle->quotes & 1)) {
-            res = p;
-            break; // Found newline, exit loop
-        }
-    }
-    return res;
-}
-
-#ifdef CSV_UNPACK_64_SEARCH
-static char* search_lf_in_chunk_unpacked(char* p, size_t size, CsvHandle handle)
-{
-    int i;
-    char* res;
-    char c;
-    uint64_t* pd = (uint64_t*)p;
-    uint64_t* pde = pd + (size / sizeof(uint64_t));
-
-    for (; pd < pde; pd++)
-    {
-        /* unpack 64bits to 8x8bits */
-        p = (char*)pd;
-        for (i = 0; i < 8; i++) {
-            res = NULL;
-            c = p[i];
-
-            if (c == handle->quote) {
-                handle->quotes++;
-            } else if (c == '\n' && !(handle->quotes & 1)) {
-                res = p + i;
-                return res; // Found newline, return immediately
-            }
-        }
-    }
-    // Continue search with remaining bytes if size is not a multiple of 8
-    return search_lf_in_chunk((char*)pde, size % sizeof(uint64_t), handle);
-}
-#endif
 
 char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
 {
@@ -363,100 +310,210 @@ char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
      * using modern SIMD instructions, but for now
      * we only fetch 8Bytes "at once"
      */
+    int i;
+    char* res;
+    char c;
+    char* end = p + size;
+
 #ifdef CSV_UNPACK_64_SEARCH
-    return search_lf_in_chunk_unpacked(p, size, handle);
-#else
-    return search_lf_in_chunk(p, size, handle);
-#endif
-}
+    uint64_t* pd = (uint64_t*)p;
+    uint64_t* pde = pd + (size / sizeof(uint64_t));
 
-static char* process_found_newline(CsvHandle handle, char* p, size_t size, char* found)
-{
-    size_t line_size = (size_t)(found - p) + 1;
-    handle->pos += line_size;
-    handle->quotes = 0;
-    char* row_start = p;
-
-    if (handle->auxbufPos > 0)
+    for (; pd < pde; pd++)
     {
-        // Append the found line to the auxiliary buffer
-        if (!CsvChunkToAuxBuf(handle, p, line_size))
-        {
-             return NULL; // Error
+        p = (char*)pd;
+        for (i = 0; i < 8; i++) {
+            // Process each byte in the 64-bit word using the helper
+            res = process_char_for_newline(p + i, p[i], handle);
+            if (res != NULL) {
+                return res;
+            }
         }
-        row_start = handle->auxbuf;
-        line_size = handle->auxbufPos; // The size of the full line in auxbuf
     }
+    // Continue the byte-by-byte search from where 64-bit processing stopped
+    p = (char*)pde;
+#endif
 
-    // Null-terminate the line
-    char* line_end = row_start + line_size - 1;
-    if (line_size >= 2 && *(line_end - 1) == '\r')
+    // Process remaining bytes one by one using the helper
+    for (; p < end; p++)
     {
-        --line_end;
+        res = process_char_for_newline(p, *p, handle);
+        if (res != NULL) {
+            return res;
+        }
     }
-    *line_end = '\0';
 
-    handle->auxbufPos = 0; // Reset aux buffer position for the next row
-
-    return row_start;
+    return NULL;
 }
 
-static int handle_mapping_error(int err) {
-    if (err == -EINVAL) {
-        // End of file reached, return remaining data in auxbuf
-        return 1;
-    } else if (err == -ENOMEM) {
-        // Memory mapping error
-        return -1;
+// Helper function to reallocate the auxiliary buffer if needed
+// Returns 0 on success, -1 on failure.
+static int realloc_aux_buffer(CsvHandle handle, size_t required_size) {
+    if (handle->auxbufSize < required_size) {
+        void* mem = realloc(handle->auxbuf, required_size);
+        if (!mem) return -1; // Reallocation failed
+
+        handle->auxbuf = mem;
+        handle->auxbufSize = required_size;
     }
-    return 0; // No error
+    return 0; // Success
 }
+
+// Helper to process the case when a newline is found in the current chunk.
+// It handles merging with auxiliary buffer data, copying, null-termination,
+// and updating the handle state. Returns the allocated row or NULL on error.
+static char* process_found_row(CsvHandle handle, char* chunk_start, char* newline_pos) {
+    // +1 to include the newline character itself
+    size_t row_size_in_chunk = (size_t)(newline_pos - chunk_start) + 1;
+    // Total size of the row including any accumulated data and the current chunk part
+    size_t total_row_size = handle->auxbufPos + row_size_in_chunk;
+    // Required size for the auxiliary buffer to hold the complete row + null terminator
+    size_t required_aux_size = total_row_size + 1;
+
+    // Ensure the auxiliary buffer is large enough
+    if (realloc_aux_buffer(handle, required_aux_size) != 0) {
+        return NULL; // Reallocation failed
+    }
+
+    // Copy the part of the current chunk up to and including the newline
+    // Append it to the data already in the auxiliary buffer
+    memcpy((char*)handle->auxbuf + handle->auxbufPos, chunk_start, row_size_in_chunk);
+    // Update auxbufPos to reflect the total size of the complete row now stored in auxbuf
+    handle->auxbufPos += row_size_in_chunk;
+
+    // Null-terminate the complete row string in the auxiliary buffer
+    // Handle potential carriage return just before the newline
+    char* end_ptr = (char*)handle->auxbuf + total_row_size - 1; // Points to the last character of the row (which is '\n')
+    if (total_row_size >= 1 && *end_ptr == '\n') {
+        if (total_row_size >= 2 && *(end_ptr - 1) == '\r') {
+            end_ptr--; // Point before the '\r'
+        }
+    }
+     *end_ptr = '\0';
+
+
+    // Update the handle's position in the mapped memory
+    handle->pos += row_size_in_chunk;
+    // Reset the quote count for the next row
+    handle->quotes = 0;
+    // Reset auxbufPos as the complete row has been extracted and is ready to be returned
+    handle->auxbufPos = 0;
+
+    // The complete row is now in the auxiliary buffer starting from the beginning
+    return handle->auxbuf;
+}
+
+// Helper to accumulate the data of the current chunk into the auxiliary buffer
+// when no newline is found. Updates the handle state. Returns 0 on success, -1 on failure.
+static int accumulate_chunk(CsvHandle handle, char* chunk_start, size_t chunk_size) {
+    // Required size for the auxiliary buffer to hold existing data + current chunk + null terminator
+    size_t required_aux_size = handle->auxbufPos + chunk_size + 1;
+
+    // Ensure the auxiliary buffer is large enough
+    if (realloc_aux_buffer(handle, required_aux_size) != 0) {
+        return -1; // Reallocation failed
+    }
+
+    // Copy the entire current chunk to the end of the auxiliary buffer
+    memcpy((char*)handle->auxbuf + handle->auxbufPos, chunk_start, chunk_size);
+    // Update auxbufPos to reflect the newly added data
+    handle->auxbufPos += chunk_size;
+
+    // Null-terminate the accumulated data in aux buffer (optional, but matches original logic)
+    *(char*)((char*)handle->auxbuf + handle->auxbufPos) = '\0';
+
+    // Update the handle's position in the mapped memory to indicate the entire chunk was consumed
+    handle->pos += chunk_size;
+
+    return 0; // Success
+}
+
 
 char* CsvReadNextRow(CsvHandle handle)
 {
     int err;
-    char* p = NULL;
+    char* p = NULL; // Pointer to the start of the current chunk being processed
     char* found = NULL;
     size_t size;
 
+    // Reset context for the new row
+    handle->context = NULL;
+
     do
     {
+        // Ensure that memory is mapped, mapping the next block if necessary
         err = CsvEnsureMapped(handle);
-        handle->context = NULL;
 
-        int mapping_error_status = handle_mapping_error(err);
-        if (mapping_error_status == 1) {
-            return handle->auxbuf; // Return remaining auxbuf data
-        } else if (mapping_error_status == -1) {
-            return NULL; // Memory mapping error
+        // Handle errors during mapping
+        if (err == -ENOMEM)
+        {
+            // Memory mapping failed
+            return NULL;
         }
 
+        // Check if the end of the file has been reached and if there's remaining data in the aux buffer
+        if (err == -EINVAL)
+        {
+            // End of file reached. If there is any data in the auxiliary buffer,
+            // treat it as the last (possibly incomplete) row.
+            if (handle->auxbufPos > 0)
+            {
+                // Null-terminate the remaining data in auxbuf and return it.
+                // Transfer ownership of the aux buffer memory.
+                *(char*)((char*)handle->auxbuf + handle->auxbufPos) = '\0';
+                char* last_row = handle->auxbuf;
+                handle->auxbuf = NULL; // Avoid freeing transferred memory in CsvClose
+                handle->auxbufSize = 0;
+                handle->auxbufPos = 0; // Reset position
+                return last_row;
+            }
+            else
+            {
+                // No data left in the aux buffer and end of file reached.
+                // Break the loop and return NULL.
+                break;
+            }
+        }
+
+        // Get the size of the remaining data in the current mapped block
         size = handle->size - handle->pos;
+        // Point to the start of the unread data in the mapped memory
+        p = (char*)handle->mem + handle->pos;
+
+        // If there's no data left in the current mapped block,
+        // continue to the next iteration to try and map the next block.
         if (!size)
-            break;
+            continue;
 
         /* search this chunk for NL */
-        p = (char*)handle->mem + handle->pos;
         found = CsvSearchLf(p, size, handle);
 
         if (found)
         {
-            return process_found_newline(handle, p, size, found);
+            // Newline found: process the complete row.
+            // This involves potentially merging with data from the auxiliary buffer.
+            char* row = process_found_row(handle, p, found);
+            if (!row) {
+                // Error occurred during row processing (e.g., realloc failed)
+                 return NULL;
+            }
+            return row; // Return the successfully processed row
         }
         else
         {
-            /* correctly process boundries, storing
-             * remaning bytes in aux buffer */
-            if (!CsvChunkToAuxBuf(handle, p, size))
-            {
-                return NULL; // Error
+            // Newline not found in this chunk: accumulate the entire chunk
+            // into the auxiliary buffer.
+            if (accumulate_chunk(handle, p, size) != 0) {
+                 // Error occurred during accumulation (e.g., realloc failed)
+                 return NULL;
             }
-            handle->pos = handle->size; // Processed the whole chunk
+            // The loop continues to the next iteration to map the next chunk.
         }
 
-    } while (!found);
+    } while (1); // Loop until explicitly broken or a row is returned
 
-    return NULL; // No complete line found
+    // Return NULL if the loop breaks (end of file without remaining aux data or error).
+    return NULL;
 }
 
 const char* CsvReadNextCol(char* row, CsvHandle handle)
