@@ -242,7 +242,6 @@ void CsvClose(CsvHandle handle)
     if (!handle)
         return;
 
-    // ~| nl=0
     UnmapMem(handle);
 
     CloseHandle(handle->fm);
@@ -261,7 +260,6 @@ static int CsvEnsureMapped(CsvHandle handle)
     if (handle->pos < handle->size)
         return 0;
 
-    // ~| nl=0
     UnmapMem(handle);  
 
     handle->mem = NULL;
@@ -269,7 +267,6 @@ static int CsvEnsureMapped(CsvHandle handle)
         return -EINVAL;
 
     newSize = handle->mapSize + handle->blockSize;
-    // ~| nl=0
     if (MapMem(handle))
     {
         handle->pos = 0;
@@ -290,10 +287,11 @@ static int CsvEnsureMapped(CsvHandle handle)
 
 static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
 {
+    void* mem;
     size_t newSize = handle->auxbufPos + size + 1;
     if (handle->auxbufSize < newSize)
     {
-        void* mem = realloc(handle->auxbuf, newSize);
+        mem = realloc(handle->auxbuf, newSize);
         if (!mem)
             return NULL;
 
@@ -335,6 +333,7 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
      * using modern SIMD instructions, but for now
      * we only fetch 8Bytes "at once"
      */
+    char* res;
     char* end = p + size;
     char quote = handle->quote;
 
@@ -346,23 +345,21 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
     {
         /* unpack 64bits to 8x8bits */
         p = (char*)pd;
-        for (int i = 0; i < 8; i++) {
-            // ~| nl=2
-            char* result = handle_quote_and_newline(p[i], i, quote, handle, p);
-            if (result != NULL) {
-                return result;
+        for (int i = 0; i < 8; i++)
+        {
+            res = handle_quote_and_newline(p[i], i, quote, handle, p);
+            if (res != NULL) {
+                return res;
             }
         }
     }
     p = (char*)pde;
 #endif
-    
     for (; p < end; p++)
     {
-        // ~| nl=1
-        char* result = handle_quote_and_newline(*p, 0, quote, handle, p);
-        if (result != NULL) {
-            return result;
+        res = handle_quote_and_newline(*p, 0, quote, handle, p);
+        if (res != NULL) {
+            return res;
         }
     }
 
@@ -371,13 +368,14 @@ static char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
 
 char* CsvReadNextRow(CsvHandle handle)
 {
-    size_t size;
+    int err;
     char* p = NULL;
     char* found = NULL;
+    size_t size;
 
     do
     {
-        int err = CsvEnsureMapped(handle);
+        err = CsvEnsureMapped(handle);
         handle->context = NULL;
         
         if (err == -EINVAL)
@@ -411,7 +409,6 @@ char* CsvReadNextRow(CsvHandle handle)
             
             if (handle->auxbufPos)
             {
-                // ~| nl=3
                 if (!CsvChunkToAuxBuf(handle, p, size))
                     break;
                 
@@ -423,7 +420,6 @@ char* CsvReadNextRow(CsvHandle handle)
             handle->auxbufPos = 0;
 
             /* terminate line */
-            // ~| nl=2
             CsvTerminateLine(p + size - 1, size);
             return p;
         }
@@ -435,7 +431,6 @@ char* CsvReadNextRow(CsvHandle handle)
 
         /* correctly process boundries, storing
          * remaning bytes in aux buffer */
-        // ~| nl=1
         if (!CsvChunkToAuxBuf(handle, p, size))
             break;
 
