@@ -177,7 +177,6 @@ CJSON_PUBLIC(char *) cJSONUtils_FindPointerFromObjectTo(const cJSON * const obje
 
             if (cJSON_IsObject(object))
             {
-                pointer_encoded_length;
                 string = (unsigned char*)current_child->string;
                 for (pointer_encoded_length = 0; *string != '\0'; (void)string++, pointer_encoded_length++)
                 {
