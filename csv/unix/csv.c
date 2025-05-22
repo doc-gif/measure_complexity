@@ -7,22 +7,11 @@
 #include <string.h>
 #include "csv.h"
 
-/* Windows specific */
-#ifdef _WIN32
-#include <Windows.h>
-typedef unsigned long long file_off_t;
-#else
 #include <sys/types.h>
 typedef off_t file_off_t;
-#endif
 
 /* max allowed buffer */
 #define BUFFER_WIDTH_APROX (40 * 1024 * 1024)
-
-#if defined (__aarch64__) || defined (__amd64__) || defined (_M_AMD64)
-/* unpack csv newline search */
-#define CSV_UNPACK_64_SEARCH
-#endif
 
 /* private csv handle:
  * @mem: pointer to memory
@@ -54,16 +43,7 @@ struct CsvHandle_
     size_t auxbufPos;
     size_t quotes;
     void* auxbuf;
-    
-#if defined ( __unix__ )
     int fh;
-#elif defined ( _WIN32 )
-    HANDLE fh;
-    HANDLE fm;
-#else
-    #error Wrong platform definition
-#endif
-
     char delim;
     char quote;
     char escape;
@@ -79,10 +59,6 @@ CsvHandle CsvOpen(const char* filename)
 #define GET_PAGE_ALIGNED( orig, page ) \
     (((orig) + ((page) - 1)) & ~((page) - 1))
 
-/* thin platform dependent layer so we can use file mapping
- * with winapi and oses following posix specs.
- */
-#ifdef __unix__
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -162,96 +138,6 @@ void CsvClose(CsvHandle handle)
     free(handle);
 }
 
-#else
-
-/* extra Windows specific implementations
- */
-CsvHandle CsvOpen2(const char* filename,
-                   char delim,
-                   char quote,
-                   char escape)
-{
-    LARGE_INTEGER fsize;
-    SYSTEM_INFO info;
-    size_t pageSize = 0;
-    CsvHandle handle = calloc(1, sizeof(struct CsvHandle_));
-    if (!handle)
-        return NULL;
-
-    handle->delim = delim;
-    handle->quote = quote;
-    handle->escape = escape;
-
-    GetSystemInfo(&info);
-    handle->blockSize = GET_PAGE_ALIGNED(BUFFER_WIDTH_APROX, info.dwPageSize);
-    handle->fh = CreateFile(filename, 
-                            GENERIC_READ, 
-                            FILE_SHARE_READ, 
-                            NULL, 
-                            OPEN_EXISTING, 
-                            FILE_ATTRIBUTE_NORMAL, 
-                            NULL);
-
-    if (handle->fh == INVALID_HANDLE_VALUE)
-        goto fail;
-
-    if (GetFileSizeEx(handle->fh, &fsize) == FALSE)
-        goto fail;
-
-    handle->fileSize = fsize.QuadPart;
-    if (!handle->fileSize)
-        goto fail;
-
-    handle->fm = CreateFileMapping(handle->fh, NULL, PAGE_WRITECOPY, 0, 0, NULL);
-    if (handle->fm == NULL)
-        goto fail;
-
-    return handle;
-
-fail:
-    if (handle->fh != INVALID_HANDLE_VALUE)
-        CloseHandle(handle->fh);
-
-    free(handle);
-    return NULL;
-}
-
-static void* MapMem(CsvHandle handle)
-{
-    size_t size = handle->blockSize;
-    if (handle->mapSize + size > handle->fileSize)
-        size = 0;  /* last chunk, extend to file mapping max */
-
-    handle->mem = MapViewOfFileEx(handle->fm, 
-                                  FILE_MAP_COPY,
-                                  (DWORD)(handle->mapSize >> 32),
-                                  (DWORD)(handle->mapSize & 0xFFFFFFFF),
-                                  size,
-                                  NULL);
-    return handle->mem;
-}
-
-static void UnmapMem(CsvHandle handle)
-{
-    if (handle->mem)
-        UnmapViewOfFileEx(handle->mem, 0);
-}
-
-void CsvClose(CsvHandle handle)
-{
-    if (!handle)
-        return;
-
-    UnmapMem(handle);
-
-    CloseHandle(handle->fm);
-    CloseHandle(handle->fh);
-    free(handle->auxbuf);
-    free(handle);
-}
-
-#endif
-
 static int CsvEnsureMapped(CsvHandle handle)
 {
     file_off_t newSize;
@@ -308,10 +194,6 @@ static char* CsvChunkToAuxBuf(CsvHandle handle, char* p, size_t size)
 
 static void CsvTerminateLine(char* p, size_t size)
 {
-    /* we do support standard POSIX LF sequence
-     * and Windows CR LF sequence.
-     * old non POSIX Mac OS CR is not supported.
-     */
     char* res = p;
     if (size >= 2 && p[-1] == '\r')
         --res;
@@ -330,32 +212,10 @@ char* handle_quote_and_newline(char c, int n, char quote, CsvHandle handle, char
 
 char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
 {
-    /* TODO: this can be greatly optimized by
-     * using modern SIMD instructions, but for now
-     * we only fetch 8Bytes "at once"
-     */
     char* res;
     char* end = p + size;
     char quote = handle->quote;
 
-#ifdef CSV_UNPACK_64_SEARCH
-    uint64_t* pd = (uint64_t*)p;
-    uint64_t* pde = pd + (size / sizeof(uint64_t));
-
-    for (; pd < pde; pd++)
-    {
-        /* unpack 64bits to 8x8bits */
-        p = (char*)pd;
-        for (int i = 0; i < 8; i++)
-        {
-            res = handle_quote_and_newline(p[i], i, quote, handle, p);
-            if (res != NULL) {
-                return res;
-            }
-        }
-    }
-    p = (char*)pde;
-#endif
     for (; p < end; p++)
     {
         res = handle_quote_and_newline(*p, 0, quote, handle, p);
