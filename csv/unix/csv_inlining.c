@@ -121,18 +121,13 @@ static void* MapMem(CsvHandle handle)
     return handle->mem;
 }
 
-static void UnmapMem(CsvHandle handle)
-{
-    if (handle->mem)
-        munmap(handle->mem, handle->blockSize);
-}
-
 void CsvClose(CsvHandle handle)
 {
     if (!handle)
         return;
 
-    UnmapMem(handle);
+    if (handle->mem)
+        munmap(handle->mem, handle->blockSize);
 
     close(handle->fh);
     free(handle->auxbuf);
@@ -142,19 +137,29 @@ void CsvClose(CsvHandle handle)
 static int CsvEnsureMapped(CsvHandle handle)
 {
     file_off_t newSize;
+    void *map_mem;
     
     /* do not need to map */
     if (handle->pos < handle->size)
         return 0;
 
-    UnmapMem(handle);  
+    if (handle->mem)
+        munmap(handle->mem, handle->blockSize);
 
     handle->mem = NULL;
     if (handle->mapSize >= handle->fileSize)
         return -EINVAL;
 
     newSize = handle->mapSize + handle->blockSize;
-    if (MapMem(handle))
+
+    handle->mem = mmap(0, handle->blockSize,
+                       PROT_READ | PROT_WRITE,
+                       MAP_PRIVATE,
+                       handle->fh, handle->mapSize);
+
+    map_mem = handle->mem;
+
+    if (map_mem)
     {
         handle->pos = 0;
         handle->mapSize = newSize;
