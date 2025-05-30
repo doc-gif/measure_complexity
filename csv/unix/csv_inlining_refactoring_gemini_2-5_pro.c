@@ -14,11 +14,6 @@ typedef off_t file_off_t;
 /* max allowed buffer */
 #define BUFFER_WIDTH_APROX (40 * 1024 * 1024)
 
-#if defined (__aarch64__) || defined (__amd64__) || defined (_M_AMD64)
-/* unpack csv newline search */
-#define CSV_UNPACK_64_SEARCH
-#endif
-
 /* private csv handle:
  * @mem: pointer to memory
  * @pos: position in buffer
