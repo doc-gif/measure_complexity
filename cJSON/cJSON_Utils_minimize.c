@@ -559,7 +559,7 @@ int main() {
         char *pointer_to_address = cJSONUtils_FindPointerFromObjectTo(root, address_object);
         if (pointer_to_address) {
             printf("Pointer to 'address': %s\n", pointer_to_address);
-            cJSON_free(pointer_to_address); // 重要: 返された文字列はfreeが必要
+            cJSON_free(pointer_to_address);
         } else {
             printf("Could not find pointer to 'address'.\n");
         }
