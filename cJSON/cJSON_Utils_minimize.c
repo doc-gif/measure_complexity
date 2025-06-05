@@ -529,3 +529,114 @@ void create_patches(cJSON * const patches, const unsigned char * const path, cJS
             break;
     }
 }
+
+int main() {
+    printf("--- Testing cJSONUtils_FindPointerFromObjectTo ---\n");
+    const char *json_string = "{\n"
+                              "  \"name\": \"John Doe\",\n"
+                              "  \"age\": 30,\n"
+                              "  \"address\": {\n"
+                              "    \"street\": \"123 Main St\",\n"
+                              "    \"city\": \"Anytown\"\n"
+                              "  },\n"
+                              "  \"phones\": [\n"
+                              "    { \"type\": \"home\", \"number\": \"555-1234\" },\n"
+                              "    { \"type\": \"work\", \"number\": \"555-5678\" }\n"
+                              "  ]\n"
+                              "}";
+
+    cJSON *root = cJSON_Parse(json_string);
+    if (root == NULL) {
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL) {
+            fprintf(stderr, "Error before: %s\n", error_ptr);
+        }
+        return 1;
+    }
+
+    cJSON *address_object = cJSON_GetObjectItemCaseSensitive(root, "address");
+    if (address_object) {
+        char *pointer_to_address = cJSONUtils_FindPointerFromObjectTo(root, address_object);
+        if (pointer_to_address) {
+            printf("Pointer to 'address': %s\n", pointer_to_address);
+            cJSON_free(pointer_to_address); // 重要: 返された文字列はfreeが必要
+        } else {
+            printf("Could not find pointer to 'address'.\n");
+        }
+    }
+
+    if (address_object) {
+        cJSON *city_item = cJSON_GetObjectItemCaseSensitive(address_object, "city");
+        if (city_item) {
+            char *pointer_to_city = cJSONUtils_FindPointerFromObjectTo(root, city_item);
+            if (pointer_to_city) {
+                printf("Pointer to 'city' (from root): %s\n", pointer_to_city);
+                cJSON_free(pointer_to_city);
+            } else {
+                printf("Could not find pointer to 'city'.\n");
+            }
+        }
+    }
+
+    cJSON *phones_array = cJSON_GetObjectItemCaseSensitive(root, "phones");
+    if (phones_array && cJSON_IsArray(phones_array) && cJSON_GetArraySize(phones_array) > 1) {
+        cJSON *second_phone_object = cJSON_GetArrayItem(phones_array, 1);
+        if (second_phone_object) {
+            cJSON *work_number_item = cJSON_GetObjectItemCaseSensitive(second_phone_object, "number");
+            if (work_number_item) {
+                char *pointer_to_work_number = cJSONUtils_FindPointerFromObjectTo(root, work_number_item);
+                if (pointer_to_work_number) {
+                    printf("Pointer to 'work number': %s\n", pointer_to_work_number);
+                    cJSON_free(pointer_to_work_number);
+                } else {
+                    printf("Could not find pointer to 'work number'.\n");
+                }
+            }
+        }
+    }
+
+    printf("\n--- Testing create_patches ---\n");
+    const char *from_json_string = "{\n"
+                                   "  \"name\": \"John Doe\",\n"
+                                   "  \"age\": 30,\n"
+                                   "  \"city\": \"Anytown\",\n"
+                                   "  \"tags\": [\"json\", \"c\"]\n"
+                                   "}";
+
+    const char *to_json_string = "{\n"
+                                 "  \"name\": \"Jane Doe\",\n"
+                                 "  \"age\": 31,\n"
+                                 "  \"occupation\": \"Engineer\",\n"
+                                 "  \"tags\": [\"json\", \"c\", \"patch\"]\n"
+                                 "}";
+
+    cJSON *from_json = cJSON_Parse(from_json_string);
+    cJSON *to_json = cJSON_Parse(to_json_string);
+    cJSON *patches_array = cJSON_CreateArray(); // パッチを格納する配列
+
+    if (!from_json || !to_json || !patches_array) {
+        fprintf(stderr, "Error parsing JSON or creating patches array.\n");
+        cJSON_Delete(from_json);
+        cJSON_Delete(to_json);
+        cJSON_Delete(patches_array);
+        return 1;
+    }
+
+    // パッチを生成 (パスの開始は空文字列、大文字小文字を区別する)
+    // create_patches の path 引数は unsigned char * なのでキャストする
+    create_patches(patches_array, (const unsigned char *)"", from_json, to_json, 1 /* true for case_sensitive */);
+
+    char *patches_string = cJSON_Print(patches_array);
+    if (patches_string) {
+        printf("Generated Patches:\n%s\n", patches_string);
+        cJSON_free(patches_string);
+    } else {
+        printf("Could not print generated patches.\n");
+    }
+
+    cJSON_Delete(from_json);
+    cJSON_Delete(to_json);
+    cJSON_Delete(patches_array); // patches_arrayを解放すると、その中の要素 (patchオブジェクト) も解放される
+
+    return 0;
+}

@@ -1,0 +1,21 @@
+id,firstname,lastname,role,start_date
+1,Michael,Smith,Project Manager,2023-01-15
+2,Jennifer,Williams,Software Engineer,2023-02-01
+3,David,Brown,QA Engineer,2023-02-10
+4,Linda,Jones,UI/UX Designer,2023-03-05
+5,Christopher,Garcia,Software Engineer,2023-03-12
+6,Jessica,Miller,Business Analyst,2023-04-01
+7,Matthew,Davis,DevOps Engineer,2023-04-20
+8,Ashley,Rodriguez,Software Engineer,2023-05-15
+9,James,Martinez,Technical Lead,2023-06-01
+10,Amanda,Hernandez,Scrum Master,2023-06-10
+11,Robert,Lopez,Software Engineer,2023-07-01
+12,Emily,Gonzalez,QA Engineer,2023-07-20
+13,John,Wilson,UI/UX Designer,2023-08-05
+14,Sarah,Anderson,Software Engineer,2023-08-15
+15,Daniel,Thomas,Business Analyst,2023-09-01
+16,Nicole,Taylor,DevOps Engineer,2023-09-22
+17,Joseph,Moore,Software Engineer,2023-10-10
+18,Stephanie,Martin,Technical Lead,2023-11-01
+19,William,Jackson,Scrum Master,2023-11-15
+20,Elizabeth,Lee,Software Engineer,2023-12-01
