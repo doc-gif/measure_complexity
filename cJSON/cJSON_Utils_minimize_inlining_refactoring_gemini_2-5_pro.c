@@ -65,6 +65,9 @@
 #endif
 #define false ((cJSON_bool)0)
 
+/** リファクタリング後に、関数宣言前に他の関数で再帰呼び出ししエラーになっていたため、手動で追加 **/
+void create_patches(cJSON * const patches, const unsigned char * const path, cJSON * const from, cJSON * const to, const cJSON_bool case_sensitive);
+
 /* string comparison which doesn't consider NULL pointers equal */
 static int compare_strings(const unsigned char *string1, const unsigned char *string2, const cJSON_bool case_sensitive)
 {
@@ -120,6 +123,7 @@ static void encode_string_as_pointer(unsigned char *destination, const unsigned 
     destination[0] = '\0';
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Calculate the length of a string after JSON pointer encoding */
 static size_t calculate_json_pointer_encoded_string_length(const unsigned char *string_to_encode)
 {
@@ -142,7 +146,7 @@ static size_t calculate_json_pointer_encoded_string_length(const unsigned char *
     return encoded_length;
 }
 
-
+/** リファクタリングにより新たに定義された **/
 /* Create a JSON pointer for an array element */
 static unsigned char* create_json_pointer_for_array_element(const unsigned char *base_json_pointer, size_t array_index, const unsigned char *existing_suffix_json_pointer)
 {
@@ -174,6 +178,7 @@ static unsigned char* create_json_pointer_for_array_element(const unsigned char 
     return full_pointer;
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Create a JSON pointer for an object member */
 static unsigned char* create_json_pointer_for_object_member(const unsigned char *base_json_pointer, const unsigned char *member_key, const unsigned char *existing_suffix_json_pointer)
 {
@@ -265,6 +270,7 @@ CJSON_PUBLIC(char *) cJSONUtils_FindPointerFromObjectTo(const cJSON * const obje
     return NULL;
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Find the middle node of a cJSON list */
 static cJSON* find_middle_node_of_list(cJSON *list_head)
 {
@@ -288,6 +294,7 @@ static cJSON* find_middle_node_of_list(cJSON *list_head)
     return slow_ptr; /* slow_ptr is at or just before the middle */
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Merge two sorted cJSON item lists */
 static cJSON* merge_sorted_json_item_lists(cJSON *first_list, cJSON *second_list, const cJSON_bool case_sensitive)
 {
@@ -406,6 +413,7 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
     return merge_sorted_json_item_lists(first_half, second_half, case_sensitive);
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Build a JSON patch path by appending an encoded suffix to a base path. */
 static unsigned char* build_json_patch_path_with_encoded_suffix(const unsigned char *base_path, const unsigned char *suffix_to_encode_and_append)
 {
@@ -492,6 +500,7 @@ static void compose_patch(cJSON * const patches, const unsigned char * const ope
     cJSON_AddItemToArray(patches, patch_item);
 }
 
+/** リファクタリングにより新たに定義された **/
 static void process_common_array_elements_for_patch(cJSON *patches_array, const unsigned char *current_path, cJSON **from_array_item_ptr, cJSON **to_array_item_ptr, size_t *index_ptr, const cJSON_bool case_sensitive)
 {
     unsigned char *element_path = NULL;
@@ -520,6 +529,7 @@ static void process_common_array_elements_for_patch(cJSON *patches_array, const 
     *index_ptr = current_index;
 }
 
+/** リファクタリングにより新たに定義された **/
 static void process_removed_array_elements_for_patch(cJSON *patches_array, const unsigned char *current_path, cJSON **from_array_item_ptr, size_t *index_ptr)
 {
     unsigned char *suffix_str = NULL;
@@ -549,6 +559,7 @@ static void process_removed_array_elements_for_patch(cJSON *patches_array, const
     /* index_ptr is not updated further here as it represented the start of removals */
 }
 
+/** リファクタリングにより新たに定義された **/
 static void process_added_array_elements_for_patch(cJSON *patches_array, const unsigned char *current_path, cJSON **to_array_item_ptr, size_t *unused_index_ptr)
 {
     cJSON *to_child_local = *to_array_item_ptr;
@@ -563,7 +574,7 @@ static void process_added_array_elements_for_patch(cJSON *patches_array, const u
     /* *unused_index_ptr = current_index; // If index was tracked */
 }
 
-
+/** リファクタリングにより新たに定義された **/
 static void generate_patches_for_array_diff(cJSON *patches_array, const unsigned char *current_path, cJSON *from_array_node, cJSON *to_array_node, const cJSON_bool case_sensitive)
 {
     cJSON *from_child_iter = NULL;
@@ -579,6 +590,7 @@ static void generate_patches_for_array_diff(cJSON *patches_array, const unsigned
     process_added_array_elements_for_patch(patches_array, current_path, &to_child_iter, &current_element_index); /* Index for add is usually '-' path */
 }
 
+/** リファクタリングにより新たに定義された **/
 static void process_object_member_match_for_patch(cJSON *patches_array, const unsigned char *current_path, cJSON *from_object_child, cJSON *to_object_child, const cJSON_bool case_sensitive)
 {
     unsigned char *member_path_str = NULL;
@@ -593,17 +605,19 @@ static void process_object_member_match_for_patch(cJSON *patches_array, const un
     cJSON_free(member_path_str);
 }
 
+/** リファクタリングにより新たに定義された **/
 static void process_object_member_removal_for_patch(cJSON *patches_array, const unsigned char *current_path, cJSON *from_object_child)
 {
     compose_patch(patches_array, (const unsigned char*)"remove", current_path, (unsigned char*)from_object_child->string, NULL);
 }
 
+/** リファクタリングにより新たに定義された **/
 static void process_object_member_addition_for_patch(cJSON *patches_array, const unsigned char *current_path, cJSON *to_object_child)
 {
     compose_patch(patches_array, (const unsigned char*)"add", current_path, (unsigned char*)to_object_child->string, to_object_child);
 }
 
-
+/** リファクタリングにより新たに定義された **/
 static void generate_patches_for_object_diff(cJSON *patches_array, const unsigned char *current_path, cJSON *from_object_node, cJSON *to_object_node, const cJSON_bool case_sensitive)
 {
     cJSON *from_child_iter = NULL;

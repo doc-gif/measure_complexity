@@ -63,6 +63,9 @@
 #endif
 #define false ((cJSON_bool)0)
 
+/** リファクタリング後に、関数宣言前に他の関数で再帰呼び出ししエラーになっていたため、手動で追加 **/
+void create_patches(cJSON * const patches, const unsigned char * const path, cJSON * const from, cJSON * const to, const cJSON_bool case_sensitive);
+
 /* string comparison which doesn't consider NULL pointers equal */
 static int compare_strings(const unsigned char *string1, const unsigned char *string2, const cJSON_bool case_sensitive)
 {
@@ -322,6 +325,7 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
     return result;
 }
 
+/** リファクタリングにより新たに定義された **/
 /* calculate the length of a string after applying JSON pointer escaping */
 static size_t get_encoded_string_length(const unsigned char *source)
 {
@@ -338,6 +342,7 @@ static size_t get_encoded_string_length(const unsigned char *source)
     return length;
 }
 
+/** リファクタリングにより新たに定義された **/
 /* creates a full path string by appending a suffix with JSON pointer escaping */
 static unsigned char* create_path_with_suffix(const unsigned char * const path, const unsigned char *suffix)
 {
@@ -390,6 +395,7 @@ static void compose_patch(cJSON * const patches, const unsigned char * const ope
     cJSON_AddItemToArray(patches, patch);
 }
 
+/** リファクタリングにより新たに定義された **/
 /* compares two cJSON numbers for equality, considering floating point precision */
 static cJSON_bool compare_json_numbers(const cJSON * const from, const cJSON * const to)
 {
@@ -404,6 +410,7 @@ static cJSON_bool compare_json_numbers(const cJSON * const from, const cJSON * c
     return (cJSON_bool)(fabs(a - b) <= maxVal * DBL_EPSILON);
 }
 
+/** リファクタリングにより新たに定義された **/
 /* handles patching for cJSON array types */
 static void handle_array_patches(cJSON * const patches, const unsigned char * const path, cJSON * const from, cJSON * const to, const cJSON_bool case_sensitive)
 {
@@ -459,6 +466,7 @@ static void handle_array_patches(cJSON * const patches, const unsigned char * co
     cJSON_free(new_path);
 }
 
+/** リファクタリングにより新たに定義された **/
 /* handles patching for cJSON object types */
 static void handle_object_patches(cJSON * const patches, const unsigned char * const path, cJSON * const from, cJSON * const to, const cJSON_bool case_sensitive)
 {

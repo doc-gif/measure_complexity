@@ -196,6 +196,7 @@ char* CsvSearchLf(char* p, size_t size, CsvHandle handle)
     return NULL;
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Ensures the auxiliary buffer has enough capacity and reallocates if needed. */
 static int ensure_auxiliary_buffer_capacity(CsvHandle handle, size_t required_additional_size)
 {
@@ -214,6 +215,7 @@ static int ensure_auxiliary_buffer_capacity(CsvHandle handle, size_t required_ad
     return 0; // Success
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Appends a chunk of data to the auxiliary buffer. */
 static int append_chunk_to_auxiliary_buffer(CsvHandle handle, const char* chunk, size_t chunk_size)
 {
@@ -226,6 +228,7 @@ static int append_chunk_to_auxiliary_buffer(CsvHandle handle, const char* chunk,
     return 0;
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Terminates the row with a null character and resets the auxiliary buffer position. */
 static char* terminate_row_and_reset_aux_buffer(CsvHandle handle, char* row_start, size_t row_size)
 {
@@ -301,6 +304,7 @@ char* CsvReadNextRow(CsvHandle handle)
     return NULL;
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Skips escape and double quote characters and returns if a double quote was skipped. */
 static int skip_escape_and_double_quote(char** p, CsvHandle handle)
 {
@@ -320,6 +324,7 @@ static int skip_escape_and_double_quote(char** p, CsvHandle handle)
     return dq;
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Checks if the current character signifies the end of a column. */
 static int is_column_end(char c, int quoted, int dq, CsvHandle handle)
 {
@@ -333,6 +338,7 @@ static int is_column_end(char c, int quoted, int dq, CsvHandle handle)
     }
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Updates the handle's context and returns the processed column. */
 static const char* update_context_and_return_column(char* row_start, char* current_p, int quoted, CsvHandle handle)
 {

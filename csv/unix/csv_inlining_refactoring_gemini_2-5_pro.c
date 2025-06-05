@@ -14,11 +14,6 @@ typedef off_t file_off_t;
 /* max allowed buffer */
 #define BUFFER_WIDTH_APROX (40 * 1024 * 1024)
 
-#if defined (__aarch64__) || defined (__amd64__) || defined (_M_AMD64)
-/* unpack csv newline search */
-#define CSV_UNPACK_64_SEARCH
-#endif
-
 /* private csv handle:
  * @mem: pointer to memory
  * @pos: position in buffer
@@ -59,6 +54,7 @@ struct CsvHandle_
 #define GET_PAGE_ALIGNED( orig, page ) \
     (((orig) + ((page) - 1)) & ~((page) - 1))
 
+/** リファクタリングにより新たに定義された **/
 /* Helper function to allocate and initialize common CsvHandle members */
 static CsvHandle AllocateAndInitializeCsvHandle(char delim, char quote, char escape) {
     CsvHandle handle;
@@ -203,6 +199,7 @@ static int CsvEnsureMapped(CsvHandle handle)
     return -ENOMEM; /* Failed to map memory */
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Helper function to process a character and find a newline */
 static char* ProcessCharacterAndFindNewline(char current_char, char* char_pos, CsvHandle handle) {
     if (current_char == handle->quote) {
@@ -233,6 +230,7 @@ char* CsvSearchLf(char* p_arg, size_t size_arg, CsvHandle handle)
     return NULL;
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Helper function to append data to the auxiliary buffer */
 static int AppendToAuxBuffer(CsvHandle handle, const char* chunk_to_append, size_t chunk_size) {
     size_t new_required_size;
@@ -255,6 +253,7 @@ static int AppendToAuxBuffer(CsvHandle handle, const char* chunk_to_append, size
     return 0; /* Indicate success */
 }
 
+/** リファクタリングにより新たに定義された **/
 /* Helper function to terminate a row string, handling CRLF and LF */
 static void TerminateRowString(char* row_data, size_t length_with_newline) {
     char* terminator_pos;
@@ -362,6 +361,7 @@ char* CsvReadNextRow(CsvHandle handle)
     return NULL;
 }
 
+/** リファクタリングにより新たに定義された **/
 /*
  * Helper function to parse the content of a field, handling escapes and quotes.
  * Advances p_read_ptr and p_write_ptr.
