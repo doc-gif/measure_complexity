@@ -115,22 +115,6 @@ static cJSON_bool compare_double(double a, double b)
     return (fabs(a - b) <= maxVal * DBL_EPSILON);
 }
 
-/* calculate the length of a string if encoded as JSON pointer with ~0 and ~1 escape sequences */
-static size_t pointer_encoded_length(const unsigned char *string)
-{
-    size_t length;
-    for (length = 0; *string != '\0'; (void)string++, length++)
-    {
-        /* character needs to be escaped? */
-        if ((*string == '~') || (*string == '/'))
-        {
-            length++;
-        }
-    }
-
-    return length;
-}
-
 /* copy a string while escaping '~' and '/' with ~0 and ~1 JSON pointer escape codes */
 static void encode_string_as_pointer(unsigned char *destination, const unsigned char *source)
 {
@@ -342,15 +326,6 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
     }
 
     return result;
-}
-
-static void sort_object(cJSON * const object, const cJSON_bool case_sensitive)
-{
-    if (object == NULL)
-    {
-        return;
-    }
-    object->child = sort_list(object->child, case_sensitive);
 }
 
 static void compose_patch(cJSON * const patches, const unsigned char * const operation, const unsigned char * const path, const unsigned char *suffix, const cJSON * const value)
