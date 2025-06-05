@@ -380,7 +380,7 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
 }
 
 int main() {
-    const char *filename = "/mdhome/home5/py9230935/Research/program/measure_complexity/csv/unix/sample.csv";
+    const char *filename = "sample.csv";
     CsvHandle handle;
     char *row_buffer;
     const char *column_value;
