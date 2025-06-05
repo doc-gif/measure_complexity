@@ -612,7 +612,7 @@ int main() {
 
     cJSON *from_json = cJSON_Parse(from_json_string);
     cJSON *to_json = cJSON_Parse(to_json_string);
-    cJSON *patches_array = cJSON_CreateArray(); // パッチを格納する配列
+    cJSON *patches_array = cJSON_CreateArray();
 
     if (!from_json || !to_json || !patches_array) {
         fprintf(stderr, "Error parsing JSON or creating patches array.\n");
@@ -622,9 +622,7 @@ int main() {
         return 1;
     }
 
-    // パッチを生成 (パスの開始は空文字列、大文字小文字を区別する)
-    // create_patches の path 引数は unsigned char * なのでキャストする
-    create_patches(patches_array, (const unsigned char *)"", from_json, to_json, 1 /* true for case_sensitive */);
+    create_patches(patches_array, (const unsigned char *)"", from_json, to_json, cJSON_True);
 
     char *patches_string = cJSON_Print(patches_array);
     if (patches_string) {
@@ -636,7 +634,7 @@ int main() {
 
     cJSON_Delete(from_json);
     cJSON_Delete(to_json);
-    cJSON_Delete(patches_array); // patches_arrayを解放すると、その中の要素 (patchオブジェクト) も解放される
+    cJSON_Delete(patches_array);
 
     return 0;
 }
