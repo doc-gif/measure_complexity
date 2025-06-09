@@ -546,54 +546,23 @@ int main() {
                               "}";
 
     cJSON *root = cJSON_Parse(json_string);
-    if (root == NULL) {
-        const char *error_ptr = cJSON_GetErrorPtr();
-        if (error_ptr != NULL) {
-            fprintf(stderr, "Error before: %s\n", error_ptr);
-        }
-        return 1;
-    }
 
     cJSON *address_object = cJSON_GetObjectItemCaseSensitive(root, "address");
-    if (address_object) {
-        char *pointer_to_address = cJSONUtils_FindPointerFromObjectTo(root, address_object);
-        if (pointer_to_address) {
-            printf("Pointer to 'address': %s\n", pointer_to_address);
-            cJSON_free(pointer_to_address);
-        } else {
-            printf("Could not find pointer to 'address'.\n");
-        }
-    }
+    char *pointer_to_address = cJSONUtils_FindPointerFromObjectTo(root, address_object);
+    printf("Pointer to 'address': %s\n", pointer_to_address);
+    cJSON_free(pointer_to_address);
 
-    if (address_object) {
-        cJSON *city_item = cJSON_GetObjectItemCaseSensitive(address_object, "city");
-        if (city_item) {
-            char *pointer_to_city = cJSONUtils_FindPointerFromObjectTo(root, city_item);
-            if (pointer_to_city) {
-                printf("Pointer to 'city' (from root): %s\n", pointer_to_city);
-                cJSON_free(pointer_to_city);
-            } else {
-                printf("Could not find pointer to 'city'.\n");
-            }
-        }
-    }
+    cJSON *city_item = cJSON_GetObjectItemCaseSensitive(address_object, "city");
+    char *pointer_to_city = cJSONUtils_FindPointerFromObjectTo(root, city_item);
+    printf("Pointer to 'city' (from root): %s\n", pointer_to_city);
+    cJSON_free(pointer_to_city);
 
     cJSON *phones_array = cJSON_GetObjectItemCaseSensitive(root, "phones");
-    if (phones_array && cJSON_IsArray(phones_array) && cJSON_GetArraySize(phones_array) > 1) {
-        cJSON *second_phone_object = cJSON_GetArrayItem(phones_array, 1);
-        if (second_phone_object) {
-            cJSON *work_number_item = cJSON_GetObjectItemCaseSensitive(second_phone_object, "number");
-            if (work_number_item) {
-                char *pointer_to_work_number = cJSONUtils_FindPointerFromObjectTo(root, work_number_item);
-                if (pointer_to_work_number) {
-                    printf("Pointer to 'work number': %s\n", pointer_to_work_number);
-                    cJSON_free(pointer_to_work_number);
-                } else {
-                    printf("Could not find pointer to 'work number'.\n");
-                }
-            }
-        }
-    }
+    cJSON *second_phone_object = cJSON_GetArrayItem(phones_array, 1);
+    cJSON *work_number_item = cJSON_GetObjectItemCaseSensitive(second_phone_object, "number");
+    char *pointer_to_work_number = cJSONUtils_FindPointerFromObjectTo(root, work_number_item);
+    printf("Pointer to 'work number': %s\n", pointer_to_work_number);
+    cJSON_free(pointer_to_work_number);
 
     printf("\n--- Testing create_patches ---\n");
     const char *from_json_string = "{\n"
@@ -614,23 +583,11 @@ int main() {
     cJSON *to_json = cJSON_Parse(to_json_string);
     cJSON *patches_array = cJSON_CreateArray();
 
-    if (!from_json || !to_json || !patches_array) {
-        fprintf(stderr, "Error parsing JSON or creating patches array.\n");
-        cJSON_Delete(from_json);
-        cJSON_Delete(to_json);
-        cJSON_Delete(patches_array);
-        return 1;
-    }
-
     create_patches(patches_array, (const unsigned char *)"", from_json, to_json, cJSON_True);
 
     char *patches_string = cJSON_Print(patches_array);
-    if (patches_string) {
-        printf("Generated Patches:\n%s\n", patches_string);
-        cJSON_free(patches_string);
-    } else {
-        printf("Could not print generated patches.\n");
-    }
+    printf("Generated Patches:\n%s\n", patches_string);
+    cJSON_free(patches_string);
 
     cJSON_Delete(from_json);
     cJSON_Delete(to_json);
