@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "csv.h"
 
 #include <sys/types.h>
@@ -309,6 +310,7 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
     char* d = p; /* destination */
     char* b = p; /* begin */
     int quoted = 0; /* idicates quoted string */
+    int dq;
 
     quoted = *p == handle->quote;
     if (quoted)
@@ -317,7 +319,7 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
     for (; *p; p++, d++)
     {
         /* double quote is present if (1) */
-        int dq = 0;
+        dq = 0;
         
         /* skip escape */
         if (*p == handle->escape && p[1])
@@ -375,4 +377,48 @@ const char* CsvReadNextCol(char* row, CsvHandle handle)
         }
     }
     return b;
+}
+
+int main() {
+    const char *filename = "sample.csv";
+    CsvHandle handle;
+    char *row_buffer;
+    const char *column_value;
+    int row_number;
+
+    handle = CsvOpen(filename);
+    if (handle == NULL) {
+        fprintf(stderr, "Error: Could not open CSV file '%s'.\n", filename);
+        CsvClose(handle);
+        return EXIT_FAILURE;
+    }
+    printf("Successfully opened CSV file: %s\n\n", filename);
+
+    row_number = 0;
+    while ((row_buffer = CsvReadNextRow(handle)) != NULL) {
+        row_number++;
+        printf("--- Row %d ---\n", row_number);
+
+        char *current_row_ptr = row_buffer;
+        int column_number = 0;
+
+        while ((column_value = CsvReadNextCol(current_row_ptr, handle)) != NULL) {
+            column_number++;
+            printf("  Column %d: \"%s\"\n", column_number, column_value);
+        }
+
+        if (column_number == 0) {
+            if (row_buffer[0] == '\0') {
+                printf("  (Empty row or row with only empty unquoted fields parsed as empty)\n");
+            } else {
+                printf("  (Row data exists but no columns were extracted by CsvReadNextCol, raw: \"%s\")\n", row_buffer);
+            }
+        }
+        printf("\n");
+    }
+
+    CsvClose(handle);
+    printf("Closed CSV file: %s\n", filename);
+
+    return 0;
 }
