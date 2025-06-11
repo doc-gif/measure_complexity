@@ -957,3 +957,127 @@ void iniparser_freedict(dictionary * d)
 {
     dictionary_del(d);
 }
+
+int main() {
+    dictionary *ini = NULL;
+    FILE *fp = NULL;
+    const char *filename = "example.ini";
+    const char *dump_filename = "dumped_example.ini";
+
+    iniparser_set_error_callback(NULL);
+    printf("Error callback set to default.\n\n");
+
+    printf("--- Testing iniparser_load ---\n");
+    ini = iniparser_load(filename);
+    if (ini == NULL) {
+        fprintf(stderr, "Failed to load %s\n", filename);
+        return 1;
+    }
+    printf("Successfully loaded %s\n\n", filename);
+
+    printf("--- Testing iniparser_getstring ---\n");
+    const char *stringValue = iniparser_getstring(ini, "section1:stringvalue", "NOT_FOUND");
+    printf("Section1:StringValue = %s \n\n", stringValue);
+
+    printf("--- Testing iniparser_getint ---\n");
+    int nonExistentInt = iniparser_getint(ini, "section1:nonexistent_int", 999);
+    printf("Section1:NonExistentInt = %d \n\n", nonExistentInt);
+
+    printf("--- Testing iniparser_getlongint ---\n");
+    long int longIntValue = iniparser_getlongint(ini, "section1:longintvalue", -1L);
+    printf("Section1:LongIntValue = %ld \n\n", longIntValue);
+
+    printf("--- Testing iniparser_getint64 ---\n");
+    // Note: strtoimax handles signed values
+    int64_t int64Value = iniparser_getint64(ini, "section1:intvalue", -1LL);
+    printf("Section1:IntValue (as int64) = %lld \n\n", int64Value);
+
+    printf("--- Testing iniparser_getuint64 ---\n");
+    uint64_t uint64Value = iniparser_getuint64(ini, "section1:uint64value", 0ULL);
+    printf("Section1:UInt64Value = %llu \n\n", uint64Value);
+
+    printf("--- Testing iniparser_getdouble ---\n");
+    double nonExistentDouble = iniparser_getdouble(ini, "section1:nonexistent_double", -1.0);
+    printf("Section1:NonExistentDouble = %f \n\n", nonExistentDouble);
+
+    printf("--- Testing iniparser_getboolean ---\n");
+    int booleanTrue = iniparser_getboolean(ini, "section1:booleantrue", -1);
+    printf("Section1:BooleanTrue = %d \n", booleanTrue);
+    const char *escapedString = iniparser_getstring(ini, "section1:escapedstring", "Error");
+    printf("Section1:EscapedString = %s \n", escapedString);
+    const char *quotedEmpty = iniparser_getstring(ini, "section1:quotedempty", "Error");
+    printf("Section1:QuotedEmpty = \"%s\" \n\n", quotedEmpty);
+
+    printf("--- Testing iniparser_dump (to stdout) ---\n");
+    iniparser_dump(ini, stdout);
+    printf("\n");
+
+    printf("--- Testing iniparser_set ---\n");
+    iniparser_set(ini, "section1:newkey", "NewValue");
+    printf("Set section1:newkey = NewValue \n");
+    iniparser_set(ini, "section2:anotherint", "999");
+    printf("Updated section2:anotherint to 999 \n");
+    iniparser_set(ini, "newsection:newkey", "NewSectionValue");
+    printf("Set newsection:newkey = NewSectionValue  \n");
+
+    printf("--- Testing iniparser_unset ---\n");
+    iniparser_unset(ini, "section1:stringvalue");
+    printf("Unset section1:stringvalue");
+    printf("\n");
+
+    printf("--- Testing iniparser_dump_ini ---\n");
+    fp = fopen(dump_filename, "w");
+    if (fp == NULL) {
+        perror("Error creating dumped_example.ini");
+        iniparser_freedict(ini);
+        return 1;
+    }
+    iniparser_dump_ini(ini, fp);
+    fclose(fp);
+    printf("Dictionary dumped to %s. Please check the file contents.\n\n", dump_filename);
+
+    printf("--- Testing iniparser_getsecnkeys and iniparser_getseckeys ---\n");
+    const char *target_section = "section1";
+    int num_keys = iniparser_getsecnkeys(ini, target_section);
+    printf("Number of keys in [%s]: %d\n", target_section, num_keys);
+    if (num_keys > 0) {
+        const char **keys = (const char **)malloc(num_keys * sizeof(char *));
+        if (keys) {
+            iniparser_getseckeys(ini, target_section, keys);
+            printf("Keys in [%s]:\n", target_section);
+            for (int i = 0; i < num_keys; i++) {
+                printf("  - %s\n", keys[i]);
+            }
+            free(keys);
+        } else {
+            fprintf(stderr, "Memory allocation failed for keys array.\n");
+        }
+    }
+    printf("\n");
+
+    printf("--- Simulating iniparser_line (Internal) ---\n");
+    char test_section[ASCIILINESZ + 1];
+    char test_key[ASCIILINESZ + 1];
+    char test_value[ASCIILINESZ + 1];
+    line_status status;
+
+    printf("Parsing line: \"another_key = value_without_quotes ; comment\"\n");
+    memset(test_section, 0, sizeof(test_section));
+    memset(test_key, 0, sizeof(test_key));
+    memset(test_value, 0, sizeof(test_value));
+    status = iniparser_line("another_key = value_without_quotes ; comment", test_section, test_key, test_value);
+    printf("  Status: %d (LINE_VALUE=%d), Section: '%s', Key: '%s', Value: '%s'\n",
+           status, LINE_VALUE, test_section, test_key, test_value);
+    printf("\n");
+
+
+    // 16. iniparser_freedict
+    printf("--- Testing iniparser_freedict ---\n");
+    iniparser_freedict(ini);
+    ini = NULL; // Good practice to set to NULL after freeing
+    printf("Dictionary freed.\n\n");
+
+    printf("All tests completed. Check '%s' for dumped content.\n", dump_filename);
+
+    return 0;
+}
