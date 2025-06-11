@@ -387,12 +387,6 @@ int main() {
     int row_number;
 
     handle = CsvOpen(filename);
-    if (handle == NULL) {
-        fprintf(stderr, "Error: Could not open CSV file '%s'.\n", filename);
-        CsvClose(handle);
-        return EXIT_FAILURE;
-    }
-    printf("Successfully opened CSV file: %s\n\n", filename);
 
     row_number = 0;
     while ((row_buffer = CsvReadNextRow(handle)) != NULL) {
@@ -406,19 +400,10 @@ int main() {
             column_number++;
             printf("  Column %d: \"%s\"\n", column_number, column_value);
         }
-
-        if (column_number == 0) {
-            if (row_buffer[0] == '\0') {
-                printf("  (Empty row or row with only empty unquoted fields parsed as empty)\n");
-            } else {
-                printf("  (Row data exists but no columns were extracted by CsvReadNextCol, raw: \"%s\")\n", row_buffer);
-            }
-        }
         printf("\n");
     }
 
     CsvClose(handle);
-    printf("Closed CSV file: %s\n", filename);
 
     return 0;
 }
