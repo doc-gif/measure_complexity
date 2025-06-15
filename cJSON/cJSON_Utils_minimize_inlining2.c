@@ -639,3 +639,69 @@ void create_patches(cJSON * const patches, const unsigned char * const path, cJS
             break;
     }
 }
+
+int main() {
+    printf("--- Testing cJSONUtils_FindPointerFromObjectTo ---\n");
+    const char *json_string = "{\n"
+                              "  \"name\": \"John Doe\",\n"
+                              "  \"age\": 30,\n"
+                              "  \"address\": {\n"
+                              "    \"street\": \"123 Main St\",\n"
+                              "    \"city\": \"Anytown\"\n"
+                              "  },\n"
+                              "  \"phones\": [\n"
+                              "    { \"type\": \"home\", \"number\": \"555-1234\" },\n"
+                              "    { \"type\": \"work\", \"number\": \"555-5678\" }\n"
+                              "  ]\n"
+                              "}";
+
+    cJSON *root = cJSON_Parse(json_string);
+
+    cJSON *address_object = cJSON_GetObjectItemCaseSensitive(root, "address");
+    char *pointer_to_address = cJSONUtils_FindPointerFromObjectTo(root, address_object);
+    printf("Pointer to 'address': %s\n", pointer_to_address);
+    cJSON_free(pointer_to_address);
+
+    cJSON *city_item = cJSON_GetObjectItemCaseSensitive(address_object, "city");
+    char *pointer_to_city = cJSONUtils_FindPointerFromObjectTo(root, city_item);
+    printf("Pointer to 'city' (from root): %s\n", pointer_to_city);
+    cJSON_free(pointer_to_city);
+
+    cJSON *phones_array = cJSON_GetObjectItemCaseSensitive(root, "phones");
+    cJSON *second_phone_object = cJSON_GetArrayItem(phones_array, 1);
+    cJSON *work_number_item = cJSON_GetObjectItemCaseSensitive(second_phone_object, "number");
+    char *pointer_to_work_number = cJSONUtils_FindPointerFromObjectTo(root, work_number_item);
+    printf("Pointer to 'work number': %s\n", pointer_to_work_number);
+    cJSON_free(pointer_to_work_number);
+
+    printf("\n--- Testing create_patches ---\n");
+    const char *from_json_string = "{\n"
+                                   "  \"name\": \"John Doe\",\n"
+                                   "  \"age\": 30,\n"
+                                   "  \"city\": \"Anytown\",\n"
+                                   "  \"tags\": [\"json\", \"c\"]\n"
+                                   "}";
+
+    const char *to_json_string = "{\n"
+                                 "  \"name\": \"Jane Doe\",\n"
+                                 "  \"age\": 31,\n"
+                                 "  \"occupation\": \"Engineer\",\n"
+                                 "  \"tags\": [\"json\", \"c\", \"patch\"]\n"
+                                 "}";
+
+    cJSON *from_json = cJSON_Parse(from_json_string);
+    cJSON *to_json = cJSON_Parse(to_json_string);
+    cJSON *patches_array = cJSON_CreateArray();
+
+    create_patches(patches_array, (const unsigned char *)"", from_json, to_json, cJSON_True);
+
+    char *patches_string = cJSON_Print(patches_array);
+    printf("Generated Patches:\n%s\n", patches_string);
+    cJSON_free(patches_string);
+
+    cJSON_Delete(from_json);
+    cJSON_Delete(to_json);
+    cJSON_Delete(patches_array);
+
+    return 0;
+}
