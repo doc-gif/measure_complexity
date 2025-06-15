@@ -371,7 +371,7 @@ int iniparser_find_entry(const dictionary *ini, const char *entry) {
     char tmp_str[ASCIILINESZ + 1];
     unsigned i;
 
-    if (ini == NULL || key == NULL) {
+    if (ini == NULL || entry == NULL) {
         getstring = INI_INVALID_KEY;
     } else {
         if (entry != NULL && tmp_str != NULL && sizeof(tmp_str) != 0) {
@@ -551,7 +551,7 @@ static line_status iniparser_line(
 
         memmove(dest, line, last - line + 1);
 
-        line = last - line;
+        len = last - line;
     }
 
     sta = LINE_UNPROCESSED;
@@ -586,8 +586,6 @@ static line_status iniparser_line(
             *last = (char) 0;
 
             memmove(dest, section, last - section + 1);
-
-            section = last - section;
         }
 
         if (section != NULL && len != 0) {
@@ -879,4 +877,81 @@ dictionary *iniparser_load(const char *ininame) {
 /*--------------------------------------------------------------------------*/
 void iniparser_freedict(dictionary *d) {
     dictionary_del(d);
+}
+
+int main() {
+    dictionary *ini = NULL;
+    FILE *fp = NULL;
+    const char *filename = "example.ini";
+    const char *dump_filename = "dumped_example.ini";
+
+    iniparser_set_error_callback(NULL);
+    printf("Error callback set to default.\n\n");
+
+    printf("--- Testing iniparser_load ---\n");
+    ini = iniparser_load(filename);
+    if (ini == NULL) {
+        fprintf(stderr, "Failed to load %s\n", filename);
+        return 1;
+    }
+    printf("Successfully loaded %s\n\n", filename);
+
+    printf("--- Testing iniparser_getstring ---\n");
+    const char *stringValue = iniparser_getstring(ini, "section1:stringvalue", "NOT_FOUND");
+    printf("Section1:StringValue = %s \n\n", stringValue);
+
+    printf("--- Testing iniparser_getint ---\n");
+    int nonExistentInt = iniparser_getint(ini, "section1:nonexistent_int", 999);
+    printf("Section1:NonExistentInt = %d \n\n", nonExistentInt);
+
+    printf("--- Testing iniparser_getlongint ---\n");
+    long int longIntValue = iniparser_getlongint(ini, "section1:longintvalue", -1L);
+    printf("Section1:LongIntValue = %ld \n\n", longIntValue);
+
+    printf("--- Testing iniparser_getint64 ---\n");
+    // Note: strtoimax handles signed values
+    int64_t int64Value = iniparser_getint64(ini, "section1:intvalue", -1LL);
+    printf("Section1:IntValue (as int64) = %lld \n\n", int64Value);
+
+    printf("--- Testing iniparser_getuint64 ---\n");
+    uint64_t uint64Value = iniparser_getuint64(ini, "section1:uint64value", 0ULL);
+    printf("Section1:UInt64Value = %llu \n\n", uint64Value);
+
+    printf("--- Testing iniparser_getdouble ---\n");
+    double nonExistentDouble = iniparser_getdouble(ini, "section1:nonexistent_double", -1.0);
+    printf("Section1:NonExistentDouble = %f \n\n", nonExistentDouble);
+
+    printf("--- Testing iniparser_getboolean ---\n");
+    int booleanTrue = iniparser_getboolean(ini, "section1:booleantrue", -1);
+    printf("Section1:BooleanTrue = %d \n", booleanTrue);
+    const char *escapedString = iniparser_getstring(ini, "section1:escapedstring", "Error");
+    printf("Section1:EscapedString = %s \n", escapedString);
+    const char *quotedEmpty = iniparser_getstring(ini, "section1:quotedempty", "Error");
+    printf("Section1:QuotedEmpty = \"%s\" \n\n", quotedEmpty);
+
+    printf("--- Simulating iniparser_line (Internal) ---\n");
+    char test_section[ASCIILINESZ + 1];
+    char test_key[ASCIILINESZ + 1];
+    char test_value[ASCIILINESZ + 1];
+    line_status status;
+
+    printf("Parsing line: \"another_key = value_without_quotes ; comment\"\n");
+    memset(test_section, 0, sizeof(test_section));
+    memset(test_key, 0, sizeof(test_key));
+    memset(test_value, 0, sizeof(test_value));
+    status = iniparser_line("another_key = value_without_quotes ; comment", test_section, test_key, test_value);
+    printf("  Status: %d (LINE_VALUE=%d), Section: '%s', Key: '%s', Value: '%s'\n",
+           status, LINE_VALUE, test_section, test_key, test_value);
+    printf("\n");
+
+
+    // 16. iniparser_freedict
+    printf("--- Testing iniparser_freedict ---\n");
+    iniparser_freedict(ini);
+    ini = NULL; // Good practice to set to NULL after freeing
+    printf("Dictionary freed.\n\n");
+
+    printf("All tests completed. Check '%s' for dumped content.\n", dump_filename);
+
+    return 0;
 }
