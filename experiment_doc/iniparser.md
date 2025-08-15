@@ -1,3 +1,22 @@
+### ファイル構成とインクルードについて
+
+この資料で説明する構造体、マクロ、関数は、dictionaryライブラリによって提供されています。ファイル構成と利用方法は、以下の共通ルールに基づいています。
+
+1.  dictionary.h(ヘッダーファイル)
+    -   外部のプログラムから利用するための宣言が記述されています。
+    -   これには、dictionary構造体、公開されている関数のプロトタイプ宣言が含まれます。
+
+2.  dictionary.c (ソースファイル)
+    -   dictionary.hで宣言された関数の具体的な処理内容（定義）が記述されています。
+
+3.  インクルード経路
+    -   この資料で扱うソースコードは iniparser.h をインクルードしています。
+    -   iniparser.h は内部で dictionary.h をインクルードしているため、ここで説明する全ての機能は iniparser.h をインクルードするだけで利用可能になります。
+
+このルールに基づき、各項目での冗長な説明は省略します。
+
+### 構造体・マクロ・関数の説明
+
 以下は、ソースコード読解実験に使用するプログラムを補足するものです。プログラム本体には定義されていませんが、外部ファイルで利用されている構造体、マクロ、関数について説明します。
 
 ```c++
@@ -17,6 +36,9 @@ typedef struct _dictionary_ {
 - key	：キーのリスト
 - hash	：ハッシュ化したキーのリスト
 
+#### 宣言・定義
+- 定義場所：dictionary.h
+
 ---
 
 ```c++
@@ -32,6 +54,10 @@ dictionary * dictionary_new(size_t size);
   - 	辞書の作成に成功した場合：新しく作成された辞書へのポインタ
   - 	辞書の作成に失敗した場合：NULL
 
+#### 宣言・定義
+- 宣言場所：dictionary.h
+- 定義場所：dictionary.c
+
 ---
 
 ```c++
@@ -43,6 +69,10 @@ void dictionary_del(dictionary * d);
   - 	d：削除したい辞書へのポインタ
 - 出力（戻り値）：
   - 	無し
+
+#### 宣言・定義
+- 宣言場所：dictionary.h
+- 定義場所：dictionary.c
 
 ---
 
@@ -58,6 +88,10 @@ const char * dictionary_get(const dictionary * d, const char * key, const char *
 - 出力（戻り値）：
   - 	引数keyで指定されたキーが辞書に登録されている場合：引数keyで指定されたキーに対応するバリュー
   - 	引数keyで指定されたキーが辞書に登録されていない場合：引数defで指定された文字列
+
+#### 宣言・定義
+- 宣言場所：dictionary.h
+- 定義場所：dictionary.c
 
 ---
 
@@ -76,6 +110,10 @@ int dictionary_set(dictionary * d, const char * key, const char * val);
   - 追加または更新が成功した場合：0
   - 追加または更新が失敗した場合：-1
 
+#### 宣言・定義
+- 宣言場所：dictionary.h
+- 定義場所：dictionary.c
+
 ---
 
 ```c++
@@ -90,6 +128,10 @@ void dictionary_unset(dictionary * d, const char * key);
   - 	key：辞書から削除したいペアのキー
 - 出力（戻り値）：
   - 	無し
+
+#### 宣言・定義
+- 宣言場所：dictionary.h
+- 定義場所：dictionary.c
 
 ---
 
