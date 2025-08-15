@@ -55,14 +55,14 @@ JSON真偽値を扱うために使われる型です。
 
 cJSONノードの種類を識別するマクロです。
 -	cJSON_Invalid	：無効な文字列（cJSONノードに変換できない）
--	cJSON_False	：JSON真偽値の偽（false）
--	cJSON_True	：JSON真偽値の真（true）
--	cJSON_NULL	：JSON null値
+-	cJSON_False	    ：JSON真偽値の偽（false）
+-	cJSON_True	    ：JSON真偽値の真（true）
+-	cJSON_NULL	    ：JSON null値
 -	cJSON_Number	：JSON数値（整数や小数）
 -	cJSON_String	：JSON文字列
--	cJSON_Array	：JSON配列
+-	cJSON_Array	    ：JSON配列
 -	cJSON_Object	：JSONオブジェクト（キーとバリューのペアの集まり）
--	cJSON_Raw	：cJSONノードに変換されていない文字列
+-	cJSON_Raw	    ：cJSONノードに変換されていない文字列
 
 ---
 
@@ -169,6 +169,21 @@ CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToArray(cJSON *array, cJSON *item);
 - 出力（戻り値）：
     - 	cJSONノードの「JSON配列」への追加が成功した場合：true
     - 	cJSONノードの「JSON配列」への追加が失敗した場合：false
+
+---
+
+```c++
+CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToObject(cJSON *object, const char *string, cJSON *item);
+```
+
+引数objectで指定された「JSONオブジェクト」に、引数stringで指定されたキーと、引数itemで指定されたcJSONノードをペアとして追加します。
+- 入力（引数）：
+    - object：cJSONノードを追加したい対象の「JSONオブジェクト」へのポインタ
+    - string：「JSONオブジェクト」に追加するcJSONノードのキーに使用する文字列
+    - item：「JSONオブジェクト」に追加したいcJSONノードへのポインタ
+- 出力（戻り値）：
+    - cJSONノードの「JSONオブジェクト」への追加が成功した場合：true
+    - cJSONノードの「JSONオブジェクト」への追加が失敗した場合：false
 
 ---
 
