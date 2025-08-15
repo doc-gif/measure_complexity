@@ -1,4 +1,23 @@
-以下は、ソースコード読解実験に使用するプログラムを補足するものです。プログラム本体には定義されていませんが、外部ファイルで利用されている構造体、マクロ、関数について説明します。
+### ファイル構成とインクルードについて
+
+この資料で説明する構造体、マクロ、関数は、cJSONライブラリによって提供されています。ファイル構成と利用方法は、以下の共通ルールに基づいています。
+
+1.  cJSON.h(ヘッダーファイル)
+    -   外部のプログラムから利用するための宣言が記述されています。
+    -   これには、cJSON構造体、cJSON_bool型、各種マクロ、そして公開されている関数のプロトタイプ宣言が含まれます。
+
+2.  cJSON.c (ソースファイル)
+    -   cJSON.hで宣言された関数の具体的な処理内容（定義）が記述されています。
+
+3.  インクルード経路
+    -   この資料で扱うソースコードは cJSON_Utils.h をインクルードしています。
+    -   cJSON_Utils.h は内部で cJSON.h をインクルードしているため、ここで説明する全ての機能は cJSON_Utils.h をインクルードするだけで利用可能になります。
+
+このルールに基づき、各項目での冗長な説明は省略します。
+
+### 構造体・マクロ・関数の説明
+
+以下は、ソースコード読解実験に使用するプログラムを補足するものです。プログラム本体には定義されていませんが、外部ファイルで利用されている構造体・マクロ・関数について説明します。
 
 ```c++
 typedef struct cJSON
@@ -23,6 +42,10 @@ JSON形式データを表現する構造体です。
 -	valuedouble：typeがcJSON_Numberかつその値が小数の時に、数値が格納されます。
 -	string：このcJSONノード名の文字列が格納されます。
 
+#### 宣言・定義
+-   定義場所：cJSON.h
+-   インクルード経路：この定義は cJSON.h にありますが、cJSON_Utils.h が内部で cJSON.h をインクルードしているため、cJSON_Utils.h をインクルードすることでも利用可能になります。
+
 ---
 
 ```c++
@@ -31,6 +54,9 @@ typedef int cJSON_bool;
 
 JSON真偽値を扱うために使われる型です。
 
+#### 宣言・定義
+-   定義場所：cJSON.h
+
 ---
 
 ```c++
@@ -38,6 +64,9 @@ JSON真偽値を扱うために使われる型です。
 ```
 
 引数typeで指定された関数型を返します。
+
+#### 宣言・定義
+-   定義場所：cJSON.h
 
 ---
 
@@ -64,6 +93,9 @@ cJSONノードの種類を識別するマクロです。
 -	cJSON_Object	：JSONオブジェクト（キーとバリューのペアの集まり）
 -	cJSON_Raw	    ：cJSONノードに変換されていない文字列
 
+#### 宣言・定義
+-   定義場所：cJSON.h
+
 ---
 
 ```c++
@@ -75,6 +107,10 @@ CJSON_PUBLIC(void) cJSON_Delete(cJSON *item);
     -	item：削除したいcJSONノードへのポインタ
 - 出力（戻り値）：
     -	無し
+ 
+#### 宣言・定義
+-   宣言場所：cJSON.h
+-   定義場所：cJSON.c
 
 ---
 
@@ -87,6 +123,10 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateString(const char *string);
 - 出力（戻り値）：
     - cJSONノードの作成に成功した場合：新たに作成したcJSONノードへのポインタ
     - cJSONノードの作成に失敗した場合：NULL
+ 
+#### 宣言・定義
+-   宣言場所：cJSON.h
+-   定義場所：cJSON.c
 
 ---
 
@@ -100,6 +140,10 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateObject(void);
 - 出力（戻り値）：
     - 	cJSONノードの作成に成功した場合：新たに作成したcJSONノードへのポインタ
     - 	cJSONノードの作成に失敗した場合：NULL
+ 
+#### 宣言・定義
+-   宣言場所：cJSON.h
+-   定義場所：cJSON.c
 
 ---
 
@@ -114,6 +158,10 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateArray(void );
     - 	cJSONノードの作成に成功した場合：新たに作成された「JSON配列」のcJSONノードへのポインタ
     - 	cJSONノードの作成に失敗した場合：NULL
 
+#### 宣言・定義
+-   宣言場所：cJSON.h
+-   定義場所：cJSON.c
+
 ---
 
 ```c++
@@ -127,6 +175,10 @@ CJSON_PUBLIC(cJSON *) cJSON_Parse(const char *value);
     - 	文字列の解析に成功した場合：解析結果として構築されたcJSONノードの最上位ノードへのポインタ
     - 	文字列の解析に失敗した場合：NULL
 
+#### 宣言・定義
+-   宣言場所：cJSON.h
+-   定義場所：cJSON.c
+
 ---
 
 ```c++
@@ -139,6 +191,10 @@ CJSON_PUBLIC(char *) cJSON_Print(const cJSON *item);
 - 出力（戻り値）：
     - 	JSON形式の文字列の生成に成功した場合：生成されたJSON形式の文字列
     - 	JSON形式の文字列の生成に失敗した場合：NULL
+
+#### 宣言・定義
+-   宣言場所：cJSON.h
+-   定義場所：cJSON.c
 
 ---
 
@@ -156,6 +212,10 @@ CJSON_PUBLIC(cJSON *) cJSON_Duplicate(const cJSON *item, cJSON_bool recurse);
     - 	cJSONノードの複製に成功した場合：複製されたcJSONノードへのポインタ
     - 	cJSONノードの複製に失敗した場合：NULL
 
+#### 宣言・定義
+-   宣言場所：cJSON.h
+-   定義場所：cJSON.c
+
 ---
 
 ```c++
@@ -169,6 +229,10 @@ CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToArray(cJSON *array, cJSON *item);
 - 出力（戻り値）：
     - 	cJSONノードの「JSON配列」への追加が成功した場合：true
     - 	cJSONノードの「JSON配列」への追加が失敗した場合：false
+
+#### 宣言・定義
+-   宣言場所：cJSON.h
+-   定義場所：cJSON.c
 
 ---
 
@@ -184,6 +248,10 @@ CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToObject(cJSON *object, const char *string
 - 出力（戻り値）：
     - cJSONノードの「JSONオブジェクト」への追加が成功した場合：true
     - cJSONノードの「JSONオブジェクト」への追加が失敗した場合：false
+
+#### 宣言・定義
+-   宣言場所：cJSON.h
+-   定義場所：cJSON.c
 
 ---
 
