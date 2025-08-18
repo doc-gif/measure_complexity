@@ -48,7 +48,6 @@ dictionary * dictionary_new(size_t size);
 
 #### 宣言・定義
 - 宣言場所：iniparser.h -> dictionary.h
-- 定義場所：dictionary.c
 
 ---
 
@@ -64,7 +63,6 @@ void dictionary_del(dictionary * d);
 
 #### 宣言・定義
 - 宣言場所：iniparser.h -> dictionary.h
-- 定義場所：dictionary.c
 
 ---
 
@@ -83,7 +81,6 @@ const char * dictionary_get(const dictionary * d, const char * key, const char *
 
 #### 宣言・定義
 - 宣言場所：iniparser.h -> dictionary.h
-- 定義場所：dictionary.c
 
 ---
 
@@ -104,7 +101,6 @@ int dictionary_set(dictionary * d, const char * key, const char * val);
 
 #### 宣言・定義
 - 宣言場所：iniparser.h -> dictionary.h
-- 定義場所：dictionary.c
 
 ---
 
@@ -123,7 +119,6 @@ void dictionary_unset(dictionary * d, const char * key);
 
 #### 宣言・定義
 - 宣言場所：iniparser.h -> dictionary.h
-- 定義場所：dictionary.c
 
 ### 標準的な構造体・マクロ関数の説明
 
