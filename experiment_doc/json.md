@@ -103,8 +103,7 @@ CJSON_PUBLIC(void) cJSON_Delete(cJSON *item);
     -	無し
  
 #### 宣言・定義
--   宣言場所：cJSON_Utils.h -> cJSON.h
--   定義場所：cJSON.c
+-   宣言場所：cJSON_Utils.h -> cJSON.h￥
 
 ---
 
@@ -120,7 +119,6 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateString(const char *string);
  
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
--   定義場所：cJSON.c
 
 ---
 
@@ -137,7 +135,6 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateObject(void);
  
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
--   定義場所：cJSON.c
 
 ---
 
@@ -154,7 +151,6 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateArray(void );
 
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
--   定義場所：cJSON.c
 
 ---
 
@@ -171,7 +167,6 @@ CJSON_PUBLIC(cJSON *) cJSON_Parse(const char *value);
 
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
--   定義場所：cJSON.c
 
 ---
 
@@ -188,7 +183,6 @@ CJSON_PUBLIC(char *) cJSON_Print(const cJSON *item);
 
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
--   定義場所：cJSON.c
 
 ---
 
@@ -208,7 +202,6 @@ CJSON_PUBLIC(cJSON *) cJSON_Duplicate(const cJSON *item, cJSON_bool recurse);
 
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
--   定義場所：cJSON.c
 
 ---
 
@@ -226,7 +219,6 @@ CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToArray(cJSON *array, cJSON *item);
 
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
--   定義場所：cJSON.c
 
 ---
 
@@ -245,7 +237,6 @@ CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToObject(cJSON *object, const char *string
 
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
--   定義場所：cJSON.c
 
 ---
 
