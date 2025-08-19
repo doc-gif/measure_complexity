@@ -334,71 +334,6 @@ int iniparser_getboolean(const dictionary * d, const char * key, int notfound)
     return ret;
 }
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Finds out if a given entry exists in a dictionary
-  @param    ini     Dictionary to search
-  @param    entry   Name of the entry to look for
-  @return   integer 1 if entry exists, 0 otherwise
-
-  Finds out if a given entry exists in the dictionary. Since sections
-  are stored as keys with NULL associated values, this is the only way
-  of querying for the presence of sections in a dictionary.
- */
-/*--------------------------------------------------------------------------*/
-int iniparser_find_entry(const dictionary * ini, const char * entry)
-{
-    int found=0 ;
-    if (iniparser_getstring(ini, entry, INI_INVALID_KEY)!=INI_INVALID_KEY) {
-        found = 1 ;
-    }
-    return found ;
-}
-
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Set an entry in a dictionary.
-  @param    ini     Dictionary to modify.
-  @param    entry   Entry to modify (entry name)
-  @param    val     New value to associate to the entry.
-  @return   int 0 if Ok, -1 otherwise.
-
-  If the given entry can be found in the dictionary, it is modified to
-  contain the provided value. If it cannot be found, the entry is created.
-  It is Ok to set val to NULL.
- */
-/*--------------------------------------------------------------------------*/
-int iniparser_set(dictionary * ini, const char * entry, const char * val)
-{
-    char tmp_key[ASCIILINESZ+1] = {0};
-    char tmp_val[ASCIILINESZ+1] = {0};
-    size_t len;
-
-    if(val) {
-        len = strlen(val);
-        len = len > ASCIILINESZ ? ASCIILINESZ : len;
-        memcpy(tmp_val, val, len) ;
-        val = tmp_val;
-    }
-    return dictionary_set(ini, strlwc(entry, tmp_key, sizeof(tmp_key)), val);
-}
-
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Delete an entry in a dictionary
-  @param    ini     Dictionary to modify
-  @param    entry   Entry to delete (entry name)
-  @return   void
-
-  If the given entry can be found, it is deleted from the dictionary.
- */
-/*--------------------------------------------------------------------------*/
-void iniparser_unset(dictionary * ini, const char * entry)
-{
-    char tmp_str[ASCIILINESZ+1];
-    dictionary_unset(ini, strlwc(entry, tmp_str, sizeof(tmp_str)));
-}
-
 static void parse_quoted_value(char *value, char quote) {
     char c;
     char *quoted;
@@ -687,7 +622,7 @@ void iniparser_freedict(dictionary * d)
 int main() {
     dictionary *ini = NULL;
     FILE *fp = NULL;
-    const char *filename = "example.ini";
+    const char *filename = "/mdhome/home5/py9230935/Research/program/measure_complexity/ini_parser/example.ini";
     const char *dump_filename = "dumped_example.ini";
 
     iniparser_set_error_callback(NULL);
