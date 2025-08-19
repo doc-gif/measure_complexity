@@ -63,56 +63,11 @@
 #endif
 #define false ((cJSON_bool)0)
 
-/* string comparison which doesn't consider NULL pointers equal */
-static int compare_strings(const unsigned char *string1, const unsigned char *string2, const cJSON_bool case_sensitive)
-{
-    if ((string1 == NULL) || (string2 == NULL))
-    {
-        return 1;
-    }
-
-    if (string1 == string2)
-    {
-        return 0;
-    }
-
-    if (case_sensitive)
-    {
-        return strcmp((const char*)string1, (const char*)string2);
-    }
-
-    for(; tolower(*string1) == tolower(*string2); (void)string1++, string2++)
-    {
-        if (*string1 == '\0')
-        {
-            return 0;
-        }
-    }
-
-    return tolower(*string1) - tolower(*string2);
-}
-
 /* securely comparison of floating-point variables */
 static cJSON_bool compare_double(double a, double b)
 {
     double maxVal = fabs(a) > fabs(b) ? fabs(a) : fabs(b);
     return (fabs(a - b) <= maxVal * DBL_EPSILON);
-}
-
-/* calculate the length of a string if encoded as JSON pointer with ~0 and ~1 escape sequences */
-static size_t pointer_encoded_length(const unsigned char *string)
-{
-    size_t length;
-    for (length = 0; *string != '\0'; (void)string++, length++)
-    {
-        /* character needs to be escaped? */
-        if ((*string == '~') || (*string == '/'))
-        {
-            length++;
-        }
-    }
-
-    return length;
 }
 
 /* copy a string while escaping '~' and '/' with ~0 and ~1 JSON pointer escape codes */
@@ -312,15 +267,6 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
     }
 
     return result;
-}
-
-static void sort_object(cJSON * const object, const cJSON_bool case_sensitive)
-{
-    if (object == NULL)
-    {
-        return;
-    }
-    object->child = sort_list(object->child, case_sensitive);
 }
 
 static void compose_patch(cJSON * const patches, const unsigned char * const operation, const unsigned char * const path, const unsigned char *suffix, const cJSON * const value)
