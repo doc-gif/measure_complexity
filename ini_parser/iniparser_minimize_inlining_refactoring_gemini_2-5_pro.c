@@ -170,23 +170,6 @@ int iniparser_getboolean(const dictionary *d, const char *key, int notfound) {
     return notfound;
 }
 
-int iniparser_find_entry(const dictionary *ini, const char *entry) {
-    return iniparser_get_value_string(ini, entry) != INI_INVALID_KEY;
-}
-
-int iniparser_set(dictionary *ini, const char *entry, const char *val) {
-    char lower_entry[ASCIILINESZ + 1];
-    strlwc(entry, lower_entry, sizeof(lower_entry));
-    return dictionary_set(ini, lower_entry, val);
-}
-
-void iniparser_unset(dictionary *ini, const char *entry) {
-    char lower_entry[ASCIILINESZ + 1];
-    strlwc(entry, lower_entry, sizeof(lower_entry));
-    dictionary_unset(ini, lower_entry);
-}
-
-
 static void parse_quoted_value(char *value) {
     char *p = value;
     char *d = value;
