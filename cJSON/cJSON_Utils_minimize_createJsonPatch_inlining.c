@@ -70,32 +70,6 @@ static cJSON_bool compare_double(double a, double b)
     return (fabs(a - b) <= maxVal * DBL_EPSILON);
 }
 
-/* copy a string while escaping '~' and '/' with ~0 and ~1 JSON pointer escape codes */
-static void encode_string_as_pointer(unsigned char *destination, const unsigned char *source)
-{
-    for (; source[0] != '\0'; (void)source++, destination++)
-    {
-        if (source[0] == '/')
-        {
-            destination[0] = '~';
-            destination[1] = '1';
-            destination++;
-        }
-        else if (source[0] == '~')
-        {
-            destination[0] = '~';
-            destination[1] = '0';
-            destination++;
-        }
-        else
-        {
-            destination[0] = source[0];
-        }
-    }
-
-    destination[0] = '\0';
-}
-
 /* sort lists using mergesort */
 static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
 {
@@ -272,7 +246,9 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
 static void compose_patch(cJSON * const patches, const unsigned char * const operation, const unsigned char * const path, const unsigned char *suffix, const cJSON * const value)
 {
     unsigned char *full_path;
+    unsigned char *destination;
     const unsigned char *string;
+    const unsigned char *source;
     cJSON *patch = NULL;
     size_t suffix_length, path_length;
 
@@ -307,7 +283,31 @@ static void compose_patch(cJSON * const patches, const unsigned char * const ope
         full_path = (unsigned char*)malloc(path_length + suffix_length + sizeof("/"));
 
         sprintf((char*)full_path, "%s/", (const char*)path);
-        encode_string_as_pointer(full_path + path_length + 1, suffix);
+
+        destination = full_path + path_length + 1;
+        source = suffix;
+
+        for (; source[0] != '\0'; (void)source++, destination++)
+        {
+            if (source[0] == '/')
+            {
+                destination[0] = '~';
+                destination[1] = '1';
+                destination++;
+            }
+            else if (source[0] == '~')
+            {
+                destination[0] = '~';
+                destination[1] = '0';
+                destination++;
+            }
+            else
+            {
+                destination[0] = source[0];
+            }
+        }
+
+        destination[0] = '\0';
 
         cJSON_AddItemToObject(patch, "path", cJSON_CreateString((const char*)full_path));
         free(full_path);
@@ -324,9 +324,11 @@ void create_patches(cJSON * const patches, const unsigned char * const path, cJS
 {
     int diff;
     unsigned char *new_path;
+    unsigned char *destination;
     const unsigned char *string;
     const unsigned char *string1;
     const unsigned char *string2;
+    const unsigned char *source;
     size_t index;
     cJSON *from_child, *to_child;
     size_t path_length, from_child_name_length;
@@ -477,7 +479,31 @@ void create_patches(cJSON * const patches, const unsigned char * const path, cJS
                     new_path = (unsigned char*)malloc(path_length + from_child_name_length + sizeof("/"));
 
                     sprintf((char*)new_path, "%s/", path);
-                    encode_string_as_pointer(new_path + path_length + 1, (unsigned char*)from_child->string);
+
+                    destination = new_path + path_length + 1;
+                    source = (unsigned char*)from_child->string;
+
+                    for (; source[0] != '\0'; (void)source++, destination++)
+                    {
+                        if (source[0] == '/')
+                        {
+                            destination[0] = '~';
+                            destination[1] = '1';
+                            destination++;
+                        }
+                        else if (source[0] == '~')
+                        {
+                            destination[0] = '~';
+                            destination[1] = '0';
+                            destination++;
+                        }
+                        else
+                        {
+                            destination[0] = source[0];
+                        }
+                    }
+
+                    destination[0] = '\0';
 
                     /* create a patch for the element */
                     create_patches(patches, new_path, from_child, to_child, case_sensitive);
