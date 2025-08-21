@@ -4,27 +4,13 @@ project(measure_complexity C)
 set(CMAKE_C_STANDARD 11)
 
 add_executable(measure_complexity
-#        cJSON/cJSON_Utils.c
-#        cJSON/cJSON_Utils_inc_goto.c
-#        cJSON/cJSON_Utils.c
-#        cJSON/cJSON_Utils_if_else-if_else.c
-#        cJSON/cJSON_Utils_minimize.c
-#        cJSON/cJSON_Utils_minimize_inlining.c
-        cJSON/cJSON_Utils_minimize_inlining_refactoring.c
+#        ini_parser/dictionary.c
+#        ini_parser/iniparser_minimize.c
+#        ini_parser/iniparser_minimize_inlining.c
+#        ini_parser/iniparser_minimize_inlining_refactoring_gemini_2-5_pro.c
+
         cJSON/cJSON.c
-#        csv/csv_original.c
-        csv/csv.c
-#        csv/csv_inc_goto.c
-#        csv/csv-if_else-if_else.c
-#        csv/csv_inlining.c
-#        csv/csv_inlining_refactoring.c
-        main.c
-        test/test_helper.c
-        test/test_helper.h
-        test/test_find_pointer.c
-        test/test_find_pointer.h
-        test/test_create_patches.c
-        test/test_create_patches.h
-        test/test_search_lf.c
-        test/test_read_next_row.c
+#        cJSON/cJSON_Utils_minimize_createJsonPatch.c
+#        cJSON/cJSON_Utils_minimize_createJsonPatch_inlining.c
+        cJSON/cJSON_Utils_minimize_createJsonPatch_inlining_refactoring_gemini_2-5_pro.c
 )

@@ -17,7 +17,6 @@
   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-
   THE SOFTWARE.
 */
 
@@ -63,11 +62,10 @@
 #endif
 #define false ((cJSON_bool)0)
 
-/* JSON Patch operation strings */
+/* JSON Patch operation strings defined as constants for safety and maintainability */
 static const unsigned char op_replace[] = "replace";
 static const unsigned char op_add[] = "add";
 static const unsigned char op_remove[] = "remove";
-
 
 /* securely comparison of floating-point variables */
 static cJSON_bool compare_double(double a, double b)
@@ -78,10 +76,8 @@ static cJSON_bool compare_double(double a, double b)
 
 /*
  * HELPER FUNCTION: compare_strings
- *
- * Compares two strings, with an option for case-insensitivity.
  * This function centralizes the string comparison logic used in sorting and object key comparison.
- * Note: The logic is preserved from the original implementation to ensure functional equivalence.
+ * It handles case sensitivity and preserves the exact behavior of the original implementation.
  */
 static int compare_strings(const unsigned char *string1, const unsigned char *string2, const cJSON_bool case_sensitive)
 {
@@ -99,7 +95,7 @@ static int compare_strings(const unsigned char *string1, const unsigned char *st
         return strcmp((const char*)string1, (const char*)string2);
     }
 
-    /* Case-insensitive comparison from the original code. */
+    /* Case-insensitive comparison logic from the original code */
     for (; tolower(*string1) == tolower(*string2); (void)string1++, string2++)
     {
         if (*string1 == '\0')
@@ -121,11 +117,11 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
 
     if ((list == NULL) || (list->next == NULL))
     {
-        /* One entry is sorted already. */
+        /* A list with zero or one items is already sorted. */
         return result;
     }
 
-    /* Check if the list is already sorted. */
+    /* Check if the list is already sorted to avoid unnecessary work. */
     while ((current_item != NULL) && (current_item->next != NULL) &&
            (compare_strings((unsigned char*)current_item->string, (unsigned char*)current_item->next->string, case_sensitive) < 0))
     {
@@ -133,11 +129,11 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
     }
     if ((current_item == NULL) || (current_item->next == NULL))
     {
-        /* Leave sorted lists unmodified. */
+        /* The list is already sorted. */
         return result;
     }
 
-    /* Split the list into two halves. */
+    /* Split the list into two halves using the fast/slow pointer method. */
     current_item = list;
     while (current_item != NULL)
     {
@@ -163,9 +159,7 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
     while ((first != NULL) && (second != NULL))
     {
         cJSON *smaller = NULL;
-        int compare_result = compare_strings((unsigned char*)first->string, (unsigned char*)second->string, case_sensitive);
-
-        if (compare_result < 0)
+        if (compare_strings((unsigned char*)first->string, (unsigned char*)second->string, case_sensitive) < 0)
         {
             smaller = first;
         }
@@ -176,8 +170,8 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
 
         if (result == NULL)
         {
-            result_tail = smaller;
             result = smaller;
+            result_tail = smaller;
         }
         else
         {
@@ -203,7 +197,7 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
         result_tail->next = first;
         first->prev = result_tail;
     }
-    if (second != NULL)
+    else if (second != NULL)
     {
         if (result == NULL) return second;
         result_tail->next = second;
@@ -213,10 +207,8 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
     return result;
 }
 
-
 /*
  * HELPER FUNCTION: build_json_pointer
- *
  * Builds a new JSON Pointer path by appending an escaped segment to a base path.
  * According to RFC 6902, '~' is escaped to '~0' and '/' is escaped to '~1'.
  * The caller is responsible for freeing the returned string.
@@ -224,7 +216,6 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
 static unsigned char* build_json_pointer(const unsigned char *base_path, const unsigned char *segment)
 {
     size_t base_path_len = strlen((const char*)base_path);
-    size_t segment_len = strlen((const char*)segment);
     size_t segment_escaped_len = 0;
     const unsigned char *p = segment;
     unsigned char *new_path = NULL;
@@ -277,9 +268,7 @@ static unsigned char* build_json_pointer(const unsigned char *base_path, const u
     return new_path;
 }
 
-/*
- * Creates a JSON Patch object and adds it to the patches array.
- */
+/* Creates a JSON Patch object and adds it to the patches array. */
 static void compose_patch(cJSON * const patches, const unsigned char * const operation, const unsigned char * const path, const unsigned char *suffix, const cJSON * const value)
 {
     cJSON *patch = NULL;
@@ -308,7 +297,6 @@ static void compose_patch(cJSON * const patches, const unsigned char * const ope
             cJSON_AddItemToObject(patch, "path", cJSON_CreateString((const char*)full_path));
             free(full_path);
         }
-        // NOTE: Original code did not handle allocation failure here.
     }
 
     if (value != NULL)
@@ -318,50 +306,37 @@ static void compose_patch(cJSON * const patches, const unsigned char * const ope
     cJSON_AddItemToArray(patches, patch);
 }
 
-/* Forward declaration */
+/* Forward declaration for the main recursive function. */
 void create_patches(cJSON * const patches, const unsigned char * const path, cJSON * const from, cJSON * const to, const cJSON_bool case_sensitive);
 
-/*
- * HELPER FUNCTION: handle_array_diff
- *
- * Generates patches for differences between two JSON arrays.
- */
+/* HELPER FUNCTION: handle_array_diff - Generates patches for differences between two JSON arrays. */
 static void handle_array_diff(cJSON * const patches, const unsigned char * const path, cJSON * const from, cJSON * const to, const cJSON_bool case_sensitive)
 {
     size_t index = 0;
     cJSON *from_child = from->child;
     cJSON *to_child = to->child;
     /* Allow space for 64bit int (log10(2^64) < 20) + path + "/" */
-    unsigned char *new_path = (unsigned char*)malloc(strlen((const char*)path) + 20 + 1);
+    unsigned char *new_path = (unsigned char*)malloc(strlen((const char*)path) + 20 + 2);
     if(new_path == NULL) return;
 
     /* Generate patches for elements that exist in both arrays */
     for (index = 0; (from_child != NULL) && (to_child != NULL); (void)(from_child = from_child->next), (void)(to_child = to_child->next), index++)
     {
-        if (index > ULONG_MAX)
-        {
-            /* Safety check from original code */
-            free(new_path);
-            return;
-        }
+        if (index > ULONG_MAX) { free(new_path); return; } /* Safety check */
         sprintf((char*)new_path, "%s/%lu", path, (unsigned long)index);
         create_patches(patches, new_path, from_child, to_child, case_sensitive);
     }
 
     /* Remove leftover elements from 'from' that are not in 'to' */
-    for (; (from_child != NULL); (void)(from_child = from_child->next))
+    for (; (from_child != NULL); (void)(from_child = from_child->next), index++)
     {
-        if (index > ULONG_MAX)
-        {
-            free(new_path);
-            return;
-        }
+        if (index > ULONG_MAX) { free(new_path); return; } /* Safety check */
         sprintf((char*)new_path, "%lu", (unsigned long)index);
         compose_patch(patches, op_remove, path, new_path, NULL);
     }
 
     /* Add new elements in 'to' that were not in 'from' */
-    for (; (to_child != NULL); (void)(to_child = to_child->next), index++)
+    for (; (to_child != NULL); (void)(to_child = to_child->next))
     {
         compose_patch(patches, op_add, path, (const unsigned char*)"-", to_child);
     }
@@ -369,38 +344,25 @@ static void handle_array_diff(cJSON * const patches, const unsigned char * const
     free(new_path);
 }
 
-/*
- * HELPER FUNCTION: handle_object_diff
- *
- * Generates patches for differences between two JSON objects.
- */
+/* HELPER FUNCTION: handle_object_diff - Generates patches for differences between two JSON objects. */
 static void handle_object_diff(cJSON * const patches, const unsigned char * const path, cJSON * const from, cJSON * const to, const cJSON_bool case_sensitive)
 {
-    cJSON *from_child = NULL;
-    cJSON *to_child = NULL;
+    cJSON *from_child = (from != NULL) ? sort_list(from->child, case_sensitive) : NULL;
+    cJSON *to_child = (to != NULL) ? sort_list(to->child, case_sensitive) : NULL;
+    if (from) from->child = from_child;
+    if (to) to->child = to_child;
 
-    if (from != NULL)
-    {
-        from->child = sort_list(from->child, case_sensitive);
-    }
-    if (to != NULL)
-    {
-        to->child = sort_list(to->child, case_sensitive);
-    }
-
-    from_child = from->child;
-    to_child = to->child;
 
     while ((from_child != NULL) || (to_child != NULL))
     {
-        int diff = 0;
+        int diff;
         if (from_child == NULL)
         {
-            diff = 1; /* 'to' has more items */
+            diff = 1; /* 'to' has an item that 'from' doesn't */
         }
         else if (to_child == NULL)
         {
-            diff = -1; /* 'from' has more items */
+            diff = -1; /* 'from' has an item that 'to' doesn't */
         }
         else
         {
@@ -409,7 +371,7 @@ static void handle_object_diff(cJSON * const patches, const unsigned char * cons
 
         if (diff == 0)
         {
-            /* Keys match, compare values recursively */
+            /* Keys match, so compare values recursively. */
             unsigned char *new_path = build_json_pointer(path, (unsigned char*)from_child->string);
             if(new_path)
             {
@@ -421,23 +383,20 @@ static void handle_object_diff(cJSON * const patches, const unsigned char * cons
         }
         else if (diff < 0)
         {
-            /* Item in 'from' not in 'to' -> remove it */
+            /* Item in 'from' is not in 'to' -> remove it. */
             compose_patch(patches, op_remove, path, (unsigned char*)from_child->string, NULL);
             from_child = from_child->next;
         }
         else
         {
-            /* Item in 'to' not in 'from' -> add it */
+            /* Item in 'to' is not in 'from' -> add it. */
             compose_patch(patches, op_add, path, (unsigned char*)to_child->string, to_child);
             to_child = to_child->next;
         }
     }
 }
 
-
-/*
- * Main recursive function to generate JSON patches by comparing 'from' and 'to' JSON objects.
- */
+/* Main recursive function to generate JSON patches by comparing 'from' and 'to' JSON objects. */
 void create_patches(cJSON * const patches, const unsigned char * const path, cJSON * const from, cJSON * const to, const cJSON_bool case_sensitive)
 {
     if ((from == NULL) || (to == NULL))
@@ -476,7 +435,7 @@ void create_patches(cJSON * const patches, const unsigned char * const path, cJS
             return;
 
         default:
-            /* cJSON_False, cJSON_True, cJSON_NULL, cJSON_Raw objects are compared by type only */
+            /* cJSON_False, cJSON_True, cJSON_NULL, cJSON_Raw are compared by type only, which was already checked. */
             break;
     }
 }
