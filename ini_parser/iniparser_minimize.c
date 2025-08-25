@@ -622,7 +622,7 @@ void iniparser_freedict(dictionary * d)
 int main() {
     dictionary *ini = NULL;
     FILE *fp = NULL;
-    const char *filename = "/mdhome/home5/py9230935/Research/program/measure_complexity/ini_parser/example.ini";
+    const char *filename = "example.ini";
     const char *dump_filename = "dumped_example.ini";
 
     iniparser_set_error_callback(NULL);
