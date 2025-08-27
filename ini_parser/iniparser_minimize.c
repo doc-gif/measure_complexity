@@ -1,11 +1,3 @@
-
-/*-------------------------------------------------------------------------*/
-/**
-   @file    iniparser.c
-   @author  N. Devillard
-   @brief   Parser for ini files.
-*/
-/*--------------------------------------------------------------------------*/
 /*---------------------------- Includes ------------------------------------*/
 #include <ctype.h>
 #include <stdarg.h>
@@ -21,9 +13,6 @@
 /*---------------------------------------------------------------------------
                         Private to this module
  ---------------------------------------------------------------------------*/
-/**
- * This enum stores the status for each parsed line (internal use only).
- */
 typedef enum _line_status_ {
     LINE_UNPROCESSED,
     LINE_ERROR,
@@ -33,18 +22,6 @@ typedef enum _line_status_ {
     LINE_VALUE
 } line_status ;
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Convert a string to lowercase.
-  @param    in   String to convert.
-  @param    out Output buffer.
-  @param    len Size of the out buffer.
-  @return   ptr to the out buffer or NULL if an error occured.
-
-  This function convert a string into lowercase.
-  At most len - 1 elements of the input string will be converted.
- */
-/*--------------------------------------------------------------------------*/
 static const char * strlwc(const char * in, char *out, unsigned len)
 {
     unsigned i ;
@@ -59,16 +36,6 @@ static const char * strlwc(const char * in, char *out, unsigned len)
     return out ;
 }
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Duplicate a string
-  @param    s String to duplicate
-  @return   Pointer to a newly allocated string, to be freed with free()
-
-  This is a replacement for strdup(). This implementation is provided
-  for systems that do not have it.
- */
-/*--------------------------------------------------------------------------*/
 static char * xstrdup(const char * s)
 {
     char * t ;
@@ -84,13 +51,6 @@ static char * xstrdup(const char * s)
     return t ;
 }
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Remove blanks at the beginning and the end of a string.
-  @param    str  String to parse and alter.
-  @return   unsigned New size of the string.
- */
-/*--------------------------------------------------------------------------*/
 static unsigned strstrip(char * s)
 {
     char *last = NULL ;
@@ -111,11 +71,6 @@ static unsigned strstrip(char * s)
     return last - s;
 }
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Default error callback for iniparser: wraps `fprintf(stderr, ...)`.
- */
-/*--------------------------------------------------------------------------*/
 static int default_error_callback(const char *format, ...)
 {
   int ret;
@@ -128,15 +83,6 @@ static int default_error_callback(const char *format, ...)
 
 static int (*iniparser_error_callback)(const char*, ...) = default_error_callback;
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Configure a function to receive the error messages.
-  @param    errback  Function to call.
-
-  By default, the error will be printed on stderr. If a null pointer is passed
-  as errback the error callback will be switched back to default.
- */
-/*--------------------------------------------------------------------------*/
 void iniparser_set_error_callback(int (*errback)(const char *, ...))
 {
   if (errback) {
@@ -146,21 +92,6 @@ void iniparser_set_error_callback(int (*errback)(const char *, ...))
   }
 }
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Get the string associated to a key
-  @param    d       Dictionary to search
-  @param    key     Key string to look for
-  @param    def     Default value to return if key not found.
-  @return   pointer to statically allocated character string
-
-  This function queries a dictionary for a key. A key as read from an
-  ini file is given as "section:key". If the key cannot be found,
-  the pointer passed as 'def' is returned.
-  The returned char pointer is pointing to a string allocated in
-  the dictionary, do not free or modify it.
- */
-/*--------------------------------------------------------------------------*/
 const char * iniparser_getstring(const dictionary * d, const char * key, const char * def)
 {
     const char * lc_key ;
@@ -175,33 +106,6 @@ const char * iniparser_getstring(const dictionary * d, const char * key, const c
     return sval ;
 }
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Get the string associated to a key, convert to an long int
-  @param    d Dictionary to search
-  @param    key Key string to look for
-  @param    notfound Value to return in case of error
-  @return   long integer
-
-  This function queries a dictionary for a key. A key as read from an
-  ini file is given as "section:key". If the key cannot be found,
-  the notfound value is returned.
-
-  Supported values for integers include the usual C notation
-  so decimal, octal (starting with 0) and hexadecimal (starting with 0x)
-  are supported. Examples:
-
-  "42"      ->  42
-  "042"     ->  34 (octal -> decimal)
-  "0x42"    ->  66 (hexa  -> decimal)
-
-  Warning: the conversion may overflow in various ways. Conversion is
-  totally outsourced to strtol(), see the associated man page for overflow
-  handling.
-
-  Credits: Thanks to A. Becker for suggesting strtol()
- */
-/*--------------------------------------------------------------------------*/
 long int iniparser_getlongint(const dictionary * d, const char * key, long int notfound)
 {
     const char * str ;
@@ -229,53 +133,11 @@ uint64_t iniparser_getuint64(const dictionary * d, const char * key, uint64_t no
     return strtoumax(str, NULL, 0);
 }
 
-
-
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Get the string associated to a key, convert to an int
-  @param    d Dictionary to search
-  @param    key Key string to look for
-  @param    notfound Value to return in case of error
-  @return   integer
-
-  This function queries a dictionary for a key. A key as read from an
-  ini file is given as "section:key". If the key cannot be found,
-  the notfound value is returned.
-
-  Supported values for integers include the usual C notation
-  so decimal, octal (starting with 0) and hexadecimal (starting with 0x)
-  are supported. Examples:
-
-  "42"      ->  42
-  "042"     ->  34 (octal -> decimal)
-  "0x42"    ->  66 (hexa  -> decimal)
-
-  Warning: the conversion may overflow in various ways. Conversion is
-  totally outsourced to strtol(), see the associated man page for overflow
-  handling.
-
-  Credits: Thanks to A. Becker for suggesting strtol()
- */
-/*--------------------------------------------------------------------------*/
 int iniparser_getint(const dictionary * d, const char * key, int notfound)
 {
     return (int)iniparser_getlongint(d, key, notfound);
 }
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Get the string associated to a key, convert to a double
-  @param    d Dictionary to search
-  @param    key Key string to look for
-  @param    notfound Value to return in case of error
-  @return   double
-
-  This function queries a dictionary for a key. A key as read from an
-  ini file is given as "section:key". If the key cannot be found,
-  the notfound value is returned.
- */
-/*--------------------------------------------------------------------------*/
 double iniparser_getdouble(const dictionary * d, const char * key, double notfound)
 {
     const char * str ;
@@ -285,38 +147,6 @@ double iniparser_getdouble(const dictionary * d, const char * key, double notfou
     return atof(str);
 }
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Get the string associated to a key, convert to a boolean
-  @param    d Dictionary to search
-  @param    key Key string to look for
-  @param    notfound Value to return in case of error
-  @return   integer
-
-  This function queries a dictionary for a key. A key as read from an
-  ini file is given as "section:key". If the key cannot be found,
-  the notfound value is returned.
-
-  A true boolean is found if one of the following is matched:
-
-  - A string starting with 'y'
-  - A string starting with 'Y'
-  - A string starting with 't'
-  - A string starting with 'T'
-  - A string starting with '1'
-
-  A false boolean is found if one of the following is matched:
-
-  - A string starting with 'n'
-  - A string starting with 'N'
-  - A string starting with 'f'
-  - A string starting with 'F'
-  - A string starting with '0'
-
-  The notfound value returned if no boolean is identified, does not
-  necessarily have to be 0 or 1.
- */
-/*--------------------------------------------------------------------------*/
 int iniparser_getboolean(const dictionary * d, const char * key, int notfound)
 {
     int          ret ;
@@ -372,16 +202,6 @@ end_of_value:
     free(quoted);
 }
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Load a single line from an INI file
-  @param    input_line  Input line, may be concatenated multi-line input
-  @param    section     Output space to store section
-  @param    key         Output space to store key
-  @param    value       Output space to store value
-  @return   line_status value
- */
-/*--------------------------------------------------------------------------*/
 static line_status iniparser_line(
     const char * input_line,
     char * section,
@@ -460,20 +280,6 @@ static line_status iniparser_line(
     return sta ;
 }
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Parse an ini file and return an allocated dictionary object
-  @param    in File to read.
-  @param    ininame Name of the ini file to read (only used for nicer error messages)
-  @return   Pointer to newly allocated dictionary
-
-  This is the parser for ini files. This function is called, providing
-  the file to be read. It returns a dictionary object that should not
-  be accessed directly, but through accessor functions instead.
-
-  The returned dictionary must be freed using iniparser_freedict().
- */
-/*--------------------------------------------------------------------------*/
 dictionary * iniparser_load_file(FILE * in, const char * ininame)
 {
     char line    [ASCIILINESZ+1] ;
@@ -572,20 +378,6 @@ dictionary * iniparser_load_file(FILE * in, const char * ininame)
     return dict ;
 }
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Parse an ini file and return an allocated dictionary object
-  @param    ininame Name of the ini file to read.
-  @return   Pointer to newly allocated dictionary
-
-  This is the parser for ini files. This function is called, providing
-  the name of the file to be read. It returns a dictionary object that
-  should not be accessed directly, but through accessor functions
-  instead.
-
-  The returned dictionary must be freed using iniparser_freedict().
- */
-/*--------------------------------------------------------------------------*/
 dictionary * iniparser_load(const char * ininame)
 {
     FILE * in ;
@@ -603,17 +395,6 @@ dictionary * iniparser_load(const char * ininame)
 }
 
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Free all memory associated to an ini dictionary
-  @param    d Dictionary to free
-  @return   void
-
-  Free all memory associated to an ini dictionary.
-  It is mandatory to call this function before the dictionary object
-  gets out of the current context.
- */
-/*--------------------------------------------------------------------------*/
 void iniparser_freedict(dictionary * d)
 {
     dictionary_del(d);
@@ -649,7 +430,6 @@ int main() {
     printf("Section1:LongIntValue = %ld \n\n", longIntValue);
 
     printf("--- Testing iniparser_getint64 ---\n");
-    // Note: strtoimax handles signed values
     int64_t int64Value = iniparser_getint64(ini, "section1:intvalue", -1LL);
     printf("Section1:IntValue (as int64) = %lld \n\n", int64Value);
 
@@ -684,11 +464,9 @@ int main() {
            status, LINE_VALUE, test_section, test_key, test_value);
     printf("\n");
 
-
-    // 16. iniparser_freedict
     printf("--- Testing iniparser_freedict ---\n");
     iniparser_freedict(ini);
-    ini = NULL; // Good practice to set to NULL after freeing
+    ini = NULL;
     printf("Dictionary freed.\n\n");
 
     printf("All tests completed. Check '%s' for dumped content.\n", dump_filename);
