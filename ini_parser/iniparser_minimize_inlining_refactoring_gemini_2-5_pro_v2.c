@@ -1,30 +1,3 @@
-/*-------------------------------------------------------------------------*/
-/**
-   @file    iniparser.c
-   @author  N. Devillard
-   @brief   Parser for ini files.
-*/
-/*--------------------------------------------------------------------------*/
-
-/*
- * example.ini for testing with main()
- *
- * ; This is an example ini file.
- * [section1]
- * stringvalue = This is a string
- * intvalue = 12345
- * longintvalue = 9876543210
- * uint64value = 18446744073709551615
- * doublevalue = 3.14159
- * booleantrue = yes
- * escapedstring = "Hello \"World\""
- * quotedempty = ""
- *
- * [section2]
- * AnotherKey = AnotherValue
- */
-
-
 /*---------------------------- Includes ------------------------------------*/
 #include <ctype.h>
 #include <stdarg.h>
@@ -40,10 +13,6 @@
 /*---------------------------------------------------------------------------
                         Private to this module
  ---------------------------------------------------------------------------*/
-
-/**
- * This enum stores the status for each parsed line (internal use only).
- */
 typedef enum _line_status_ {
     LINE_UNPROCESSED,
     LINE_ERROR,
@@ -60,12 +29,6 @@ static void string_to_lowercase_copy(char *dest, const char *src, size_t size);
 static void parse_quoted_value(char *value, char quote);
 static line_status iniparser_line(const char *input_line, char *section, char *key, char *value);
 
-
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Default error callback for iniparser: wraps `fprintf(stderr, ...)`.
- */
-/*--------------------------------------------------------------------------*/
 static int default_error_callback(const char *format, ...) {
     int ret;
     va_list argptr;
@@ -77,15 +40,6 @@ static int default_error_callback(const char *format, ...) {
 
 static int (*iniparser_error_callback)(const char *, ...) = default_error_callback;
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Configure a function to receive the error messages.
-  @param    errback  Function to call.
-
-  By default, the error will be printed on stderr. If a null pointer is passed
-  as errback the error callback will be switched back to default.
- */
-/*--------------------------------------------------------------------------*/
 void iniparser_set_error_callback(int (*errback)(const char *, ...)) {
     if (errback) {
         iniparser_error_callback = errback;
@@ -98,10 +52,6 @@ void iniparser_set_error_callback(int (*errback)(const char *, ...)) {
                         Static Helper Functions
  ---------------------------------------------------------------------------*/
 
-/**
-  @brief    Trims whitespace from both ends of a string in-place.
-  @param    s   The string to be trimmed.
-*/
 static void str_trim(char *s) {
     if (s == NULL) return;
     char *start = s;
@@ -120,10 +70,6 @@ static void str_trim(char *s) {
     }
 }
 
-/**
-  @brief    Converts a string to lowercase in-place.
-  @param    s   The string to be converted.
-*/
 static void str_tolower(char *s) {
     if (s == NULL) return;
     for ( ; *s; ++s) {
@@ -131,12 +77,6 @@ static void str_tolower(char *s) {
     }
 }
 
-/**
-  @brief    Copies a source string to a destination buffer, converting it to lowercase.
-  @param    dest Destination buffer.
-  @param    src  Source string.
-  @param    size Size of the destination buffer.
-*/
 static void string_to_lowercase_copy(char *dest, const char *src, size_t size) {
     size_t i = 0;
     if (dest == NULL || src == NULL || size == 0) return;
