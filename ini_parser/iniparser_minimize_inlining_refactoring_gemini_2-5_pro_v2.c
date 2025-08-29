@@ -1,30 +1,3 @@
-/*-------------------------------------------------------------------------*/
-/**
-   @file    iniparser.c
-   @author  N. Devillard
-   @brief   Parser for ini files.
-*/
-/*--------------------------------------------------------------------------*/
-
-/*
- * example.ini for testing with main()
- *
- * ; This is an example ini file.
- * [section1]
- * stringvalue = This is a string
- * intvalue = 12345
- * longintvalue = 9876543210
- * uint64value = 18446744073709551615
- * doublevalue = 3.14159
- * booleantrue = yes
- * escapedstring = "Hello \"World\""
- * quotedempty = ""
- *
- * [section2]
- * AnotherKey = AnotherValue
- */
-
-
 /*---------------------------- Includes ------------------------------------*/
 #include <ctype.h>
 #include <stdarg.h>
@@ -78,6 +51,7 @@ void iniparser_set_error_callback(int (*errback)(const char *, ...)) {
 /*---------------------------------------------------------------------------
                         Static Helper Functions
  ---------------------------------------------------------------------------*/
+
 static void str_trim(char *s) {
     if (s == NULL) return;
     char *start = s;

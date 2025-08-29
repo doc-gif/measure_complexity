@@ -1,10 +1,3 @@
-/*-------------------------------------------------------------------------*/
-/**
-   @file    iniparser.c
-   @author  N. Devillard
-   @brief   Parser for ini files.
-*/
-/*--------------------------------------------------------------------------*/
 /*---------------------------- Includes ------------------------------------*/
 #include <ctype.h>
 #include <stdarg.h>
@@ -58,6 +51,7 @@ static void strstrip(char * s) {
         memmove(dest, s, last - s + 1);
     }
 }
+
 
 static const char * iniparser_get_value_string(const dictionary * d, const char * key) {
     char lower_key[ASCIILINESZ + 1];
