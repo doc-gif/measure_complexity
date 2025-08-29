@@ -20,9 +20,6 @@
 /*---------------------------------------------------------------------------
                         Private to this module
  ---------------------------------------------------------------------------*/
-/**
- * This enum stores the status for each parsed line (internal use only).
- */
 typedef enum _line_status_ {
     LINE_UNPROCESSED,
     LINE_ERROR,
@@ -37,12 +34,6 @@ typedef enum _line_status_ {
 static int default_error_callback(const char *format, ...);
 static int (*iniparser_error_callback)(const char *, ...) = default_error_callback;
 
-/**
- * @brief    Safely converts a string to lowercase.
- * @param    s   Source string.
- * @param    d   Destination buffer.
- * @param    len Size of the destination buffer.
- */
 static void strlwc(const char *s, char *d, size_t len) {
     size_t i = 0;
     if (s == NULL || d == NULL || len == 0) return;
@@ -53,10 +44,6 @@ static void strlwc(const char *s, char *d, size_t len) {
     d[i] = '\0';
 }
 
-/**
- * @brief    Removes leading and trailing whitespace from a string in-place.
- * @param    s   String to modify.
- */
 static void strstrip(char * s) {
     if (s == NULL) return;
     char *last = s + strlen(s);
@@ -72,13 +59,6 @@ static void strstrip(char * s) {
     }
 }
 
-
-/**
-  @brief    Get the value string associated to a key (after converting key to lowercase)
-  @param    d       Dictionary to search
-  @param    key     Key string to look for
-  @return   pointer to the value string or INI_INVALID_KEY if not found.
- */
 static const char * iniparser_get_value_string(const dictionary * d, const char * key) {
     char lower_key[ASCIILINESZ + 1];
 
@@ -90,11 +70,6 @@ static const char * iniparser_get_value_string(const dictionary * d, const char 
     return dictionary_get(d, lower_key, INI_INVALID_KEY);
 }
 
-/*-------------------------------------------------------------------------*/
-/**
-  @brief    Default error callback for iniparser: wraps `fprintf(stderr, ...)`.
- */
-/*--------------------------------------------------------------------------*/
 static int default_error_callback(const char *format, ...) {
     int ret;
     va_list argptr;
