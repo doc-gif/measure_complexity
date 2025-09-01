@@ -118,7 +118,7 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
         }
     }
 
-    compare_strings = (*string1) - tolower(*string2);
+    compare_strings = tolower(*string1) - tolower(*string2);
 
     end_compare_strings1:
 
@@ -192,7 +192,7 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
             }
         }
 
-        compare_strings = (*string1) - tolower(*string2);
+        compare_strings = tolower(*string1) - tolower(*string2);
 
         end_compare_strings2:
 
@@ -473,7 +473,7 @@ void create_patches(cJSON * const patches, const unsigned char * const path, cJS
                         }
                     }
 
-                    diff = (*string1) - tolower(*string2);
+                    diff = tolower(*string1) - tolower(*string2);
 
                     end_diff:
                 }
