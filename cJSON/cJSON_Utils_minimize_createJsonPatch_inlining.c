@@ -95,32 +95,30 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
     if ((string1 == NULL) || (string2 == NULL))
     {
         compare_strings = 1;
-        goto end_compare_strings1;
     }
-
-    if (string1 == string2)
+    else
     {
-        compare_strings = 0;
-        goto end_compare_strings1;
-    }
-
-    if (case_sensitive)
-    {
-        compare_strings = strcmp((const char*)string1, (const char*)string2);
-        goto end_compare_strings1;
-    }
-
-    for(; tolower(*string1) == tolower(*string2); (void)string1++, string2++)
-    {
-        if (*string1 == '\0')
+        if (string1 == string2)
         {
-            break;
+            compare_strings = 0;
+        }
+        else if (case_sensitive)
+        {
+            compare_strings = strcmp((const char*)string1, (const char*)string2);
+        }
+        else
+        {
+            for(; tolower(*string1) == tolower(*string2); (void)string1++, string2++)
+            {
+                if (*string1 == '\0')
+                {
+                    break;
+                }
+            }
+
+            compare_strings = tolower(*string1) - tolower(*string2);
         }
     }
-
-    compare_strings = (*string1) - tolower(*string2);
-
-    end_compare_strings1:
 
     while ((current_item != NULL) && (current_item->next != NULL) && (compare_strings < 0))
     {
@@ -169,32 +167,30 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
         if ((string1 == NULL) || (string2 == NULL))
         {
             compare_strings = 1;
-            goto end_compare_strings2;
         }
-
-        if (string1 == string2)
+        else
         {
-            compare_strings = 0;
-            goto end_compare_strings2;
-        }
-
-        if (case_sensitive)
-        {
-            compare_strings = strcmp((const char*)string1, (const char*)string2);
-            goto end_compare_strings2;
-        }
-
-        for(; tolower(*string1) == tolower(*string2); (void)string1++, string2++)
-        {
-            if (*string1 == '\0')
+            if (string1 == string2)
             {
-                break;
+                compare_strings = 0;
+            }
+            else if (case_sensitive)
+            {
+                compare_strings = strcmp((const char*)string1, (const char*)string2);
+            }
+            else
+            {
+                for(; tolower(*string1) == tolower(*string2); (void)string1++, string2++)
+                {
+                    if (*string1 == '\0')
+                    {
+                        break;
+                    }
+                }
+
+                compare_strings = tolower(*string1) - tolower(*string2);
             }
         }
-
-        compare_strings = (*string1) - tolower(*string2);
-
-        end_compare_strings2:
 
         if (compare_strings < 0)
         {
@@ -450,32 +446,30 @@ void create_patches(cJSON * const patches, const unsigned char * const path, cJS
                     if ((string1 == NULL) || (string2 == NULL))
                     {
                         diff = 1;
-                        goto end_diff;
                     }
-
-                    if (string1 == string2)
+                    else
                     {
-                        diff = 0;
-                        goto end_diff;
-                    }
-
-                    if (case_sensitive)
-                    {
-                        diff = strcmp((const char*)string1, (const char*)string2);
-                        goto end_diff;
-                    }
-
-                    for(; tolower(*string1) == tolower(*string2); (void)string1++, string2++)
-                    {
-                        if (*string1 == '\0')
+                        if (string1 == string2)
                         {
-                            break;
+                            diff = 0;
+                        }
+                        else if (case_sensitive)
+                        {
+                            diff = strcmp((const char*)string1, (const char*)string2);
+                        }
+                        else
+                        {
+                            for(; tolower(*string1) == tolower(*string2); (void)string1++, string2++)
+                            {
+                                if (*string1 == '\0')
+                                {
+                                    break;
+                                }
+                            }
+
+                            diff = tolower(*string1) - tolower(*string2);
                         }
                     }
-
-                    diff = (*string1) - tolower(*string2);
-
-                    end_diff:
                 }
 
                 if (diff == 0)
