@@ -103,7 +103,7 @@ static int compare_strings(const unsigned char *string1, const unsigned char *st
             break;
         }
     }
-    return (*string1) - tolower(*string2);
+    return tolower(*string1) - tolower(*string2);
 }
 
 /* sort lists using mergesort */
