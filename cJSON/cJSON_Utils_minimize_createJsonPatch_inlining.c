@@ -544,21 +544,67 @@ void create_patches(cJSON * const patches, const unsigned char * const path, cJS
     }
 }
 
-int main() {
-    printf("\n--- Testing create_patches ---\n");
-    const char *from_json_string = "{\n"
-                                   "  \"name\": \"John Doe\",\n"
-                                   "  \"age\": 30,\n"
-                                   "  \"city\": \"Anytown\",\n"
-                                   "  \"tags\": [\"json\", \"c\"]\n"
-                                   "}";
+char* read_file_to_buffer(const char* filepath) {
+    FILE* fp = NULL;
+    char* buffer = NULL;
+    long file_size = 0;
 
-    const char *to_json_string = "{\n"
-                                 "  \"name\": \"Jane Doe\",\n"
-                                 "  \"age\": 31,\n"
-                                 "  \"occupation\": \"Engineer\",\n"
-                                 "  \"tags\": [\"json\", \"c\", \"patch\"]\n"
-                                 "}";
+    fp = fopen(filepath, "rb");
+    if (fp == NULL) {
+        return NULL;
+    }
+
+    if (fseek(fp, 0L, SEEK_END) != 0) {
+        fclose(fp);
+        return NULL;
+    }
+
+    file_size = ftell(fp);
+    if (file_size == -1L) {
+        fclose(fp);
+        return NULL;
+    }
+
+    rewind(fp);
+
+    buffer = (char*)calloc(file_size + 1, sizeof(char));
+    if (buffer == NULL) {
+        fclose(fp);
+        return NULL;
+    }
+
+    size_t read_size = fread(buffer, sizeof(char), file_size, fp);
+    if (read_size != (size_t)file_size) {
+        if (!feof(fp) && ferror(fp)) {
+            fclose(fp);
+            free(buffer);
+            return NULL;
+        }
+    }
+
+    buffer[read_size] = '\0';
+
+    fclose(fp);
+
+    return buffer;
+}
+
+
+int main() {
+    const char* from_filepath = "from.json";
+    const char* to_filepath = "to.json";
+
+    char* from_buffer = read_file_to_buffer(from_filepath);
+    char* to_buffer = read_file_to_buffer(to_filepath);
+
+    if (from_buffer == NULL || to_buffer == NULL) {
+        free(from_buffer);
+        free(to_buffer);
+        return 1;
+    }
+
+    const char *from_json_string = from_buffer;
+    const char *to_json_string = to_buffer;
 
     cJSON *from_json = cJSON_Parse(from_json_string);
     cJSON *to_json = cJSON_Parse(to_json_string);
@@ -569,10 +615,12 @@ int main() {
     char *patches_string = cJSON_Print(patches_array);
     printf("Generated Patches:\n%s\n", patches_string);
     free(patches_string);
-
     cJSON_Delete(from_json);
     cJSON_Delete(to_json);
     cJSON_Delete(patches_array);
+
+    free(from_buffer);
+    free(to_buffer);
 
     return 0;
 }
