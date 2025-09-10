@@ -414,8 +414,8 @@ int main() {
     const char *stringValue = iniparser_getstring(ini, "Section1:StringValue1", "NOT_FOUND");
     printf("Section1:StringValue1 = %s \n", stringValue);
 
-    int intValue = iniparser_getint(ini, "section1:intvalue1", 999);
-    printf("section1:intvalue1 = %d \n", intValue);
+    int intValue = iniparser_getint(ini, "Section2:IntValue1", 999);
+    printf("Section2:IntValue1 = %d \n", intValue);
 
     long int longIntValue = iniparser_getlongint(ini, "Section1:LongIntValue2", -1L);
     printf("Section1:LongIntValue2 = %ld \n", longIntValue);
@@ -431,23 +431,15 @@ int main() {
 
     int booleanTrue = iniparser_getboolean(ini, "section1:boolEANtrue1", -1);
     printf("section1:boolEANtrue1 = %d \n", booleanTrue);
+
     const char *escapedString = iniparser_getstring(ini, "section1:escapedstring", "Error");
     printf("Section1:EscapedString = %s \n", escapedString);
+
     const char *quotedEmpty = iniparser_getstring(ini, "section1:quotedempty", "Error");
-    printf("Section1:QuotedEmpty = \"%s\" \n\n", quotedEmpty);
+    printf("Section1:QuotedEmpty = \"%s\" \n", quotedEmpty);
 
-    char test_section[ASCIILINESZ + 1];
-    char test_key[ASCIILINESZ + 1];
-    char test_value[ASCIILINESZ + 1];
-    line_status status;
-
-    memset(test_section, 0, sizeof(test_section));
-    memset(test_key, 0, sizeof(test_key));
-    memset(test_value, 0, sizeof(test_value));
-    status = iniparser_line("another_key = value_without_quotes ; comment", test_section, test_key, test_value);
-    printf("Status: %d (LINE_VALUE=%d), Section: '%s', Key: '%s', Value: '%s'\n",
-           status, LINE_VALUE, test_section, test_key, test_value);
-    printf("\n");
+    const char *separatedQuotedString = iniparser_getstring(ini, "section2:stringvalue1", "Error");
+    printf("Section2:StringValue1 = %s \n", separatedQuotedString);
 
     iniparser_freedict(ini);
     ini = NULL;
