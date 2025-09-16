@@ -231,7 +231,8 @@ static void parse_quoted_value(char *value, char quote) {
 
     if (!quoted) {
         iniparser_error_callback("iniparser: memory allocation failure\n");
-        goto end_of_value;
+        value[v] = '\0';
+        return;
     }
 
     while ((c = quoted[q]) != '\0') {
@@ -243,7 +244,7 @@ static void parse_quoted_value(char *value, char quote) {
             }
 
             if (c == quote) {
-                goto end_of_value;
+                break;
             }
         }
         esc = 0;
@@ -251,7 +252,6 @@ static void parse_quoted_value(char *value, char quote) {
         v++;
         q++;
     }
-end_of_value:
     value[v] = '\0';
     free(quoted);
 }
