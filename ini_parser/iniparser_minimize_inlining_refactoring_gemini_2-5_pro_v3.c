@@ -1,14 +1,18 @@
+/*---------------------------- Includes ------------------------------------*/
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include <stdio.h>
 #include "iniparser.h"
 
+/*---------------------------- Defines -------------------------------------*/
 #define ASCIILINESZ         (1024)
 #define INI_INVALID_KEY     ((char*)-1)
 
+/*---------------------------------------------------------------------------
+                        Private to this module
+ ---------------------------------------------------------------------------*/
 typedef enum _line_status_ {
     LINE_UNPROCESSED,
     LINE_ERROR,
@@ -18,68 +22,7 @@ typedef enum _line_status_ {
     LINE_VALUE
 } line_status;
 
-static int default_error_callback(const char *format, ...);
-static line_status iniparser_line(const char *input_line, char *section, char *key, char *value);
-
-static int (*iniparser_error_callback)(const char *, ...) = default_error_callback;
-
-static void str_to_lower(char *s)
-{
-    if (s == NULL) {
-        return;
-    }
-
-    for ( ; *s; ++s) {
-        *s = (char)tolower((unsigned char)*s);
-    }
-}
-
-static void trim_string_in_place(char *s)
-{
-    if (s == NULL) {
-        return;
-    }
-
-    char *start = s;
-    while (isspace((unsigned char)*start)) {
-        start++;
-    }
-
-    char *end = s + strlen(s);
-    while (end > start && isspace((unsigned char)*(end - 1))) {
-        end--;
-    }
-    *end = '\0';
-
-    if (start > s) {
-        memmove(s, start, (size_t)(end - start) + 1);
-    }
-}
-
-static const char *get_string_from_dictionary(const dictionary *d, const char *key, const char *def)
-{
-    if (d == NULL || key == NULL) {
-        return def;
-    }
-
-    char lower_key[ASCIILINESZ + 1];
-    size_t i = 0;
-    while (key[i] != '\0' && i < (sizeof(lower_key) - 1)) {
-        lower_key[i] = (char)tolower((unsigned char)key[i]);
-        i++;
-    }
-    lower_key[i] = '\0';
-
-    return dictionary_get(d, lower_key, def);
-}
-
-static const char *get_value_string(const dictionary *d, const char *key)
-{
-    return get_string_from_dictionary(d, key, INI_INVALID_KEY);
-}
-
-static int default_error_callback(const char *format, ...)
-{
+static int default_error_callback(const char *format, ...) {
     int ret;
     va_list argptr;
     va_start(argptr, format);
@@ -88,190 +31,254 @@ static int default_error_callback(const char *format, ...)
     return ret;
 }
 
-void iniparser_set_error_callback(int (*errback)(const char *, ...))
-{
-    if (errback != NULL) {
+static int (*iniparser_error_callback)(const char *, ...) = default_error_callback;
+
+void iniparser_set_error_callback(int (*errback)(const char *, ...)) {
+    if (errback) {
         iniparser_error_callback = errback;
     } else {
         iniparser_error_callback = default_error_callback;
     }
 }
 
-const char *iniparser_getstring(const dictionary *d, const char *key, const char *def)
-{
-    return get_string_from_dictionary(d, key, def);
+static const char *iniparser_get_lowercase_string(const dictionary *d, const char *key, const char *def) {
+    char tmp_str[ASCIILINESZ + 1];
+    const char *lc_key = NULL;
+    unsigned i;
+
+    if (d == NULL || key == NULL)
+        return def;
+
+    if (key != NULL && tmp_str != NULL && sizeof(tmp_str) != 0) {
+        i = 0;
+        while (key[i] != '\0' && i < sizeof(tmp_str) - 1) {
+            tmp_str[i] = (char) tolower((int) key[i]);
+            i++;
+        }
+        tmp_str[i] = '\0';
+        lc_key = tmp_str;
+    }
+
+    return dictionary_get(d, lc_key, def);
 }
 
-long int iniparser_getlongint(const dictionary *d, const char *key, long int notfound)
-{
-    const char *str = get_value_string(d, key);
-    if (str == INI_INVALID_KEY) {
-        return notfound;
-    }
+const char *iniparser_getstring(const dictionary *d, const char *key, const char *def) {
+    return iniparser_get_lowercase_string(d, key, def);
+}
+
+long int iniparser_getlongint(const dictionary *d, const char *key, long int notfound) {
+    const char *str;
+    str = iniparser_get_lowercase_string(d, key, INI_INVALID_KEY);
+    if (str == NULL || str == INI_INVALID_KEY) return notfound;
     return strtol(str, NULL, 0);
 }
 
-int64_t iniparser_getint64(const dictionary *d, const char *key, int64_t notfound)
-{
-    const char *str = get_value_string(d, key);
-    if (str == INI_INVALID_KEY) {
-        return notfound;
-    }
+int64_t iniparser_getint64(const dictionary *d, const char *key, int64_t notfound) {
+    const char *str;
+    str = iniparser_get_lowercase_string(d, key, INI_INVALID_KEY);
+    if (str == NULL || str == INI_INVALID_KEY) return notfound;
     return strtoimax(str, NULL, 0);
 }
 
-uint64_t iniparser_getuint64(const dictionary *d, const char *key, uint64_t notfound)
-{
-    const char *str = get_value_string(d, key);
-    if (str == INI_INVALID_KEY) {
-        return notfound;
-    }
+uint64_t iniparser_getuint64(const dictionary *d, const char *key, uint64_t notfound) {
+    const char *str;
+    str = iniparser_get_lowercase_string(d, key, INI_INVALID_KEY);
+    if (str == NULL || str == INI_INVALID_KEY) return notfound;
     return strtoumax(str, NULL, 0);
 }
 
-int iniparser_getint(const dictionary *d, const char *key, int notfound)
-{
-    return (int)iniparser_getlongint(d, key, notfound);
+int iniparser_getint(const dictionary *d, const char *key, int notfound) {
+    return (int) iniparser_getlongint(d, key, notfound);
 }
 
-double iniparser_getdouble(const dictionary *d, const char *key, double notfound)
-{
-    const char *str = get_value_string(d, key);
-    if (str == INI_INVALID_KEY) {
-        return notfound;
-    }
+double iniparser_getdouble(const dictionary *d, const char *key, double notfound) {
+    const char *str;
+    str = iniparser_get_lowercase_string(d, key, INI_INVALID_KEY);
+    if (str == NULL || str == INI_INVALID_KEY) return notfound;
     return atof(str);
 }
 
-int iniparser_getboolean(const dictionary *d, const char *key, int notfound)
-{
-    const char *c = get_value_string(d, key);
+int iniparser_getboolean(const dictionary *d, const char *key, int notfound) {
+    int ret;
+    const char *c;
+    c = iniparser_get_lowercase_string(d, key, INI_INVALID_KEY);
 
-    if (c == INI_INVALID_KEY) {
-        return notfound;
-    }
-
+    if (c == NULL || c == INI_INVALID_KEY) return notfound;
     if (c[0] == 'y' || c[0] == 'Y' || c[0] == '1' || c[0] == 't' || c[0] == 'T') {
-        return 1;
+        ret = 1;
     } else if (c[0] == 'n' || c[0] == 'N' || c[0] == '0' || c[0] == 'f' || c[0] == 'F') {
-        return 0;
+        ret = 0;
+    } else {
+        ret = notfound;
     }
-
-    return notfound;
+    return ret;
 }
 
-static void parse_quoted_value(char *value, char quote)
-{
-    if (value == NULL) {
-        return;
-    }
+static void parse_quoted_value(char *value, char quote) {
+    char c;
+    char *quoted, *t;
+    int q = 0, v = 0;
+    int esc = 0;
+    size_t len;
 
-    size_t len = strlen(value) + 1;
-    char *temp_val = (char *)malloc(len);
-    if (temp_val == NULL) {
+    if (!value)
+        return;
+
+    len = strlen(value) + 1;
+    t = (char *) malloc(len);
+    if (t) {
+        memcpy(t, value, len);
+    }
+    quoted = t;
+
+    if (!quoted) {
         iniparser_error_callback("iniparser: memory allocation failure\n");
+        value[0] = '\0';
         return;
     }
-    memcpy(temp_val, value, len);
 
-    char *read_ptr = temp_val;
-    char *write_ptr = value;
-    int is_escaped = 0;
-
-    while (*read_ptr != '\0') {
-        if (!is_escaped) {
-            if (*read_ptr == '\\') {
-                is_escaped = 1;
-                read_ptr++;
+    while ((c = quoted[q]) != '\0') {
+        if (!esc) {
+            if (c == '\\') {
+                esc = 1;
+                q++;
                 continue;
             }
-            if (*read_ptr == quote) {
+
+            if (c == quote) {
                 break;
             }
         }
-        is_escaped = 0;
-        *write_ptr = *read_ptr;
-        write_ptr++;
-        read_ptr++;
+        esc = 0;
+        value[v] = c;
+        v++;
+        q++;
     }
-    *write_ptr = '\0';
-    free(temp_val);
+
+    value[v] = '\0';
+    free(quoted);
+}
+
+static void strstrip_inplace(char *s) {
+    char *last;
+    char *dest;
+    char *start;
+
+    if (s == NULL) return;
+
+    dest = s;
+    start = s;
+    last = s + strlen(s);
+
+    while (isspace((unsigned char) *start) && *start) start++;
+    while (last > start) {
+        if (!isspace((unsigned char) *(last - 1)))
+            break ;
+        last--;
+    }
+    *last = (char) 0;
+
+    memmove(dest, start, last - start + 1);
+}
+
+static void strlower_inplace_len(char *s, size_t line_len) {
+    unsigned i = 0;
+    if (s == NULL || line_len == 0) return;
+
+    while (s[i] != '\0' && i < line_len - 1) {
+        s[i] = (char) tolower((int) s[i]);
+        i++;
+    }
+    s[i] = '\0';
 }
 
 static line_status iniparser_line(
     const char *input_line,
     char *section,
     char *key,
-    char *value)
-{
-    line_status status = LINE_UNPROCESSED;
-    char *line_buf = NULL;
-    size_t len;
+    char *value) {
+    line_status sta;
+    char *line = NULL, *t;
+    size_t len, str_len;
+    int d_quote;
 
-    if (input_line == NULL) {
-        return LINE_ERROR;
-    }
-
-    len = strlen(input_line) + 1;
-    line_buf = (char *)malloc(len);
-    if (line_buf == NULL) {
-        iniparser_error_callback("iniparser: memory allocation failure\n");
-        return LINE_ERROR;
-    }
-    memcpy(line_buf, input_line, len);
-
-    trim_string_in_place(line_buf);
-    len = strlen(line_buf);
-
-    if (len < 1) {
-        status = LINE_EMPTY;
-    } else if (line_buf[0] == '#' || line_buf[0] == ';') {
-        status = LINE_COMMENT;
-    } else if (line_buf[0] == '[' && line_buf[len - 1] == ']') {
-        sscanf(line_buf, "[%[^]]]", section);
-        trim_string_in_place(section);
-        str_to_lower(section);
-        status = LINE_SECTION;
-    } else if (sscanf(line_buf, "%[^=] = \"%[^\"]\"", key, value) == 2) {
-        trim_string_in_place(key);
-        str_to_lower(key);
-        parse_quoted_value(value, '"');
-        status = LINE_VALUE;
-    } else if (sscanf(line_buf, "%[^=] = '%[^\']'", key, value) == 2) {
-        trim_string_in_place(key);
-        str_to_lower(key);
-        parse_quoted_value(value, '\'');
-        status = LINE_VALUE;
-    } else if (sscanf(line_buf, "%[^=] = %[^;#]", key, value) == 2) {
-        trim_string_in_place(key);
-        str_to_lower(key);
-        trim_string_in_place(value);
-        if (strcmp(value, "\"\"") == 0 || strcmp(value, "''") == 0) {
-            value[0] = '\0';
+    if (input_line) {
+        str_len = strlen(input_line) + 1;
+        t = (char *) malloc(str_len);
+        if (t) {
+            memcpy(t, input_line, str_len);
         }
-        status = LINE_VALUE;
-    } else if (sscanf(line_buf, "%[^=] = %[;#]", key, value) == 2 || sscanf(line_buf, "%[^=] %[=]", key, value) == 2) {
-        trim_string_in_place(key);
-        str_to_lower(key);
-        value[0] = '\0';
-        status = LINE_VALUE;
-    } else {
-        status = LINE_ERROR;
+        line = t;
     }
 
-    free(line_buf);
-    return status;
+    if (line == NULL) {
+        len = 0;
+    } else {
+        strstrip_inplace(line);
+        len = strlen(line);
+    }
+
+    sta = LINE_UNPROCESSED;
+    if (len < 1) {
+        sta = LINE_EMPTY;
+    } else if (line[0] == '#' || line[0] == ';') {
+        sta = LINE_COMMENT;
+    } else if (line[0] == '[' && line[len - 1] == ']') {
+        sscanf(line, "[%[^\n]", section);
+        len = strlen(section);
+        if (section[len - 1] == ']') {
+            section[len - 1] = '\0';
+        }
+
+        strstrip_inplace(section);
+        strlower_inplace_len(section, len);
+        sta = LINE_SECTION;
+    } else if ((d_quote = sscanf(line, "%[^=] = \"%[^\n]\"", key, value)) == 2
+               || sscanf(line, "%[^=] = '%[^\n]'", key, value) == 2) {
+
+        strstrip_inplace(key);
+        strlower_inplace_len(key, len);
+
+        if (d_quote == 2)
+            parse_quoted_value(value, '"');
+        else
+            parse_quoted_value(value, '\'');
+        sta = LINE_VALUE;
+    } else if (sscanf(line, "%[^=] = %[^;#]", key, value) == 2) {
+
+        strstrip_inplace(key);
+        strlower_inplace_len(key, len);
+
+        strstrip_inplace(value);
+
+        if (!strcmp(value, "\"\"") || (!strcmp(value, "''"))) {
+            value[0] = 0;
+        }
+        sta = LINE_VALUE;
+    } else if (sscanf(line, "%[^=] = %[;#]", key, value) == 2
+               || sscanf(line, "%[^=] %[=]", key, value) == 2) {
+
+        strstrip_inplace(key);
+        strlower_inplace_len(key, len);
+
+        value[0] = 0;
+        sta = LINE_VALUE;
+    } else {
+        sta = LINE_ERROR;
+    }
+
+    free(line);
+    return sta;
 }
 
-dictionary *iniparser_load_file(FILE *in, const char *ininame)
-{
+dictionary *iniparser_load_file(FILE *in, const char *ininame) {
     char line[ASCIILINESZ + 1];
     char section[ASCIILINESZ + 1];
     char key[ASCIILINESZ + 1];
     char tmp[(ASCIILINESZ * 2) + 2];
     char val[ASCIILINESZ + 1];
 
-    int write_offset = 0;
+    int last = 0;
     int len;
     int lineno = 0;
     int errs = 0;
@@ -280,19 +287,21 @@ dictionary *iniparser_load_file(FILE *in, const char *ininame)
     dictionary *dict;
 
     dict = dictionary_new(0);
-    if (dict == NULL) {
+    if (!dict) {
         return NULL;
     }
 
-    memset(section, 0, sizeof(section));
+    memset(line, 0, ASCIILINESZ);
+    memset(section, 0, ASCIILINESZ);
+    memset(key, 0, ASCIILINESZ);
+    memset(val, 0, ASCIILINESZ);
+    last = 0;
 
-    while (fgets(line + write_offset, ASCIILINESZ - write_offset, in) != NULL) {
+    while (fgets(line + last, ASCIILINESZ - last, in) != NULL) {
         lineno++;
-        len = (int)strlen(line) - 1;
-        if (len <= 0) {
+        len = (int) strlen(line) - 1;
+        if (len <= 0)
             continue;
-        }
-
         if (line[len] != '\n' && !feof(in)) {
             iniparser_error_callback(
                 "iniparser: input line too long in %s (%d)\n",
@@ -301,37 +310,33 @@ dictionary *iniparser_load_file(FILE *in, const char *ininame)
             dictionary_del(dict);
             return NULL;
         }
-
         while ((len >= 0) &&
-               ((line[len] == '\n') || (isspace((unsigned char)line[len])))) {
-            line[len] = '\0';
+               ((line[len] == '\n') || (isspace((unsigned char) line[len])))) {
+            line[len] = 0;
             len--;
         }
-
         if (len < 0) {
             len = 0;
         }
-
         if (line[len] == '\\') {
-            write_offset = len;
-            continue;
+            last = len;
+            continue ;
         } else {
-            write_offset = 0;
+            last = 0;
         }
-
         switch (iniparser_line(line, section, key, val)) {
             case LINE_EMPTY:
             case LINE_COMMENT:
-                break;
+                break ;
 
             case LINE_SECTION:
                 mem_err = dictionary_set(dict, section, NULL);
-                break;
+                break ;
 
             case LINE_VALUE:
                 sprintf(tmp, "%s:%s", section, key);
                 mem_err = dictionary_set(dict, tmp, val);
-                break;
+                break ;
 
             case LINE_ERROR:
                 iniparser_error_callback(
@@ -343,29 +348,27 @@ dictionary *iniparser_load_file(FILE *in, const char *ininame)
                 break;
 
             default:
-                break;
+                break ;
         }
-        memset(line, 0, sizeof(line));
+        memset(line, 0, ASCIILINESZ);
+        last = 0;
         if (mem_err < 0) {
             iniparser_error_callback("iniparser: memory allocation failure\n");
-            break;
+            break ;
         }
     }
-
-    if (errs > 0) {
+    if (errs) {
         dictionary_del(dict);
         dict = NULL;
     }
     return dict;
 }
 
-dictionary *iniparser_load(const char *ininame)
-{
+dictionary *iniparser_load(const char *ininame) {
     FILE *in;
     dictionary *dict;
 
-    in = fopen(ininame, "r");
-    if (in == NULL) {
+    if ((in = fopen(ininame, "r")) == NULL) {
         iniparser_error_callback("iniparser: cannot open %s\n", ininame);
         return NULL;
     }
@@ -376,13 +379,12 @@ dictionary *iniparser_load(const char *ininame)
     return dict;
 }
 
-void iniparser_freedict(dictionary *d)
-{
+
+void iniparser_freedict(dictionary *d) {
     dictionary_del(d);
 }
 
-int main(void)
-{
+int main() {
     dictionary *ini = NULL;
     const char *filename = "example.ini";
 
