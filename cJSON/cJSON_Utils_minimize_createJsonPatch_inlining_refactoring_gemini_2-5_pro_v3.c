@@ -483,41 +483,31 @@ char * read_file_to_buffer(const char *filepath)
 }
 
 
-int main(void)
-{
+int main() {
     const char* from_filepath = "from.json";
     const char* to_filepath = "to.json";
 
-    char *from_buffer = read_file_to_buffer(from_filepath);
-    char *to_buffer = read_file_to_buffer(to_filepath);
+    char* from_buffer = read_file_to_buffer(from_filepath);
+    char* to_buffer = read_file_to_buffer(to_filepath);
 
-    cJSON *from_json = NULL;
-    cJSON *to_json = NULL;
-    cJSON *patches_array = NULL;
-    char *patches_string = NULL;
-
-    if ((from_buffer == NULL) || (to_buffer == NULL))
-    {
+    if (from_buffer == NULL || to_buffer == NULL) {
         free(from_buffer);
         free(to_buffer);
         return 1;
     }
 
-    from_json = cJSON_Parse(from_buffer);
-    to_json = cJSON_Parse(to_buffer);
-    patches_array = cJSON_CreateArray();
+    const char *from_json_string = from_buffer;
+    const char *to_json_string = to_buffer;
 
-    if ((from_json != NULL) && (to_json != NULL) && (patches_array != NULL))
-    {
-        create_patches(patches_array, (const unsigned char *)"", from_json, to_json, cJSON_True);
-        patches_string = cJSON_Print(patches_array);
-        if (patches_string != NULL)
-        {
-            printf("Generated Patches:\n%s\n", patches_string);
-            free(patches_string);
-        }
-    }
+    cJSON *from_json = cJSON_Parse(from_json_string);
+    cJSON *to_json = cJSON_Parse(to_json_string);
+    cJSON *patches_array = cJSON_CreateArray();
 
+    create_patches(patches_array, (const unsigned char *)"", from_json, to_json, cJSON_True);
+
+    char *patches_string = cJSON_Print(patches_array);
+    printf("Generated Patches:\n%s\n", patches_string);
+    free(patches_string);
     cJSON_Delete(from_json);
     cJSON_Delete(to_json);
     cJSON_Delete(patches_array);
