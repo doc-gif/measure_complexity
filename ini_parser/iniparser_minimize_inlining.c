@@ -593,35 +593,29 @@ int main() {
         return 1;
     }
 
-    const char *stringValue = iniparser_getstring(ini, "Section1:StringValue1", "NOT_FOUND");
-    printf("Section1:StringValue1 = %s \n", stringValue);
+    const char *stringValue = iniparser_getstring(ini, "section1:stringvalue", "NOT_FOUND");
+    printf("section1:stringvalue = %s \n", stringValue);
 
-    int intValue = iniparser_getint(ini, "Section2:IntValue1", 999);
-    printf("Section2:IntValue1 = %d \n", intValue);
+    int intValue = iniparser_getint(ini, "section1:intvalue", 999);
+    printf("section1:intvalue = %d \n", intValue);
 
-    long int longIntValue = iniparser_getlongint(ini, "Section1:LongIntValue2", -1L);
-    printf("Section1:LongIntValue2 = %ld \n", longIntValue);
+    long int longIntValue = iniparser_getlongint(ini, "section1:longintvalue", -1L);
+    printf("section1:longintvalue = %ld \n", longIntValue);
 
-    int64_t int64Value = iniparser_getint64(ini, "Section1:IntValue1", -1LL);
-    printf("Section1:IntValue1 = %lld \n", int64Value);
+    int64_t int64Value = iniparser_getint64(ini, "section1:intvalue", -1LL);
+    printf("section1:intvalue = %lld \n", int64Value);
 
-    uint64_t uint64Value = iniparser_getuint64(ini, "section1:uint64value1", 0ULL);
-    printf("Section1:UInt64Value = %llu \n", uint64Value);
+    uint64_t uint64Value = iniparser_getuint64(ini, "section1:uint64value", 0ULL);
+    printf("section1:uint64value = %llu \n", uint64Value);
 
-    double doubleValue = iniparser_getdouble(ini, "section1:doublevalue2", -1.0);
-    printf("section1:doublevalue2 = %f \n", doubleValue);
+    double doubleValue = iniparser_getdouble(ini, "section1:doublevalue", -1.0);
+    printf("section1:doublevalue = %f \n", doubleValue);
 
-    int booleanTrue = iniparser_getboolean(ini, "section1:boolEANtrue1", -1);
-    printf("section1:boolEANtrue1 = %d \n", booleanTrue);
+    int booleanTrue = iniparser_getboolean(ini, "section1:booleanValue", -1);
+    printf("section1:booleanValue = %d \n", booleanTrue);
 
-    const char *escapedString = iniparser_getstring(ini, "section1:escapedstring", "Error");
-    printf("Section1:EscapedString = %s \n", escapedString);
-
-    const char *quotedEmpty = iniparser_getstring(ini, "section1:quotedempty", "Error");
-    printf("Section1:QuotedEmpty = \"%s\" \n", quotedEmpty);
-
-    const char *separatedQuotedString = iniparser_getstring(ini, "section2:stringvalue1", "Error");
-    printf("Section2:StringValue1 = %s \n", separatedQuotedString);
+    const char *longStringValue = iniparser_getstring(ini, "section1:longstringvalue", "Error");
+    printf("section1:longstringvalue = %s \n", longStringValue);
 
     iniparser_freedict(ini);
     ini = NULL;
