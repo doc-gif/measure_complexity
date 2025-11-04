@@ -1,17 +1,16 @@
 ### インクルード経路について
 
-この資料では、ヘッダーファイル間の依存関係を表現するために、以下のような記法を用います。
+この資料では、ヘッダーファイル間の依存関係を表現するために、以下の記法を用います。
 
 A -> B
 
-ヘッダーファイルAが、その内部でヘッダーファイルBをインクルードしていることを示します。
-ヘッダーファイルAを読み込むと、Bも一緒に読み込まれるという関係性を表します。
+ヘッダーファイルAが、ヘッダーファイルBをインクルードしていることを表現します。
 
 このルールに基づき、各項目での冗長な説明は省略します。
 
 ### 構造体・マクロ・関数の説明
 
-以下は、ソースコード読解実験に使用するプログラムを補足するものです。プログラム本体には定義されていませんが、外部ファイルで利用されている構造体・マクロ・関数について説明します。
+外部ファイルで定義されている構造体・マクロ・関数について説明します。
 
 ```c++
 typedef struct cJSON
@@ -26,19 +25,18 @@ typedef struct cJSON
     char *string;
 } cJSON;
 ```
-JSON形式データを表現する構造体です。
--   next：同じ階層にあるcJSONノード（配列の要素群、JSONオブジェクト群）のうち1つ次のcJSONノードのポインタが格納されます。
--   prev：同じ階層にあるcJSONノードのうち1つ前のcJSONノードのポインタが格納されます。
--	child：1つ下の階層に子ノードを持つ時に、そのcJSONノードのポインタが格納されます。
--	type：このcJSONノードの種類を示します。
--	valuestring：typeがcJSON_StringまたはcJSON_rawのときに文字列が格納されます。
--	valueint：typeがcJSON_Numberかつその値が整数の時に、数値が格納されます。
--	valuedouble：typeがcJSON_Numberかつその値が小数の時に、数値が格納されます。
--	string：このcJSONノード名の文字列が格納されます。
+JSONのバリューを表現する構造体です。
+-   next：同じ階層のバリュー（JSON配列、JSONオブジェクトの要素群）のうち、1つ次のバリューへのポインタを格納します。
+-   prev：同じ階層のバリューのうち、1つ前のバリューへのポインタを格納します。
+-	child：1つ下の階層のバリュー（JSON配列、JSONオブジェクトの要素）へのポインタを格納します。
+-	type：バリューの種類を表現します。
+-	valuestring：バリューの種類がJSON文字列のバリューを格納します。
+-	valueint：バリューの種類がJSON数値（整数）のバリューを格納します。
+-	valuedouble：バリューの種類がJSON数値（浮動小数点）のバリューを格納します。
+-	string：バリューにキーが存在するとき、キーを格納します。
 
 #### 宣言・定義
 -   定義場所：cJSON_Utils.h -> cJSON.h
--   インクルード経路：この定義は cJSON.h にありますが、cJSON_Utils.h が内部で cJSON.h をインクルードしているため、cJSON_Utils.h をインクルードすることでも利用可能になります。
 
 ---
 
@@ -46,7 +44,7 @@ JSON形式データを表現する構造体です。
 typedef int cJSON_bool;
 ```
 
-JSON真偽値を扱うために使われる型です。
+JSON真偽値を扱うための型です。
 
 #### 宣言・定義
 -   定義場所：cJSON_Utils.h -> cJSON.h
@@ -57,7 +55,7 @@ JSON真偽値を扱うために使われる型です。
 #define CJSON_PUBLIC(type) type
 ```
 
-引数typeで指定された関数型を返します。
+引数typeで指定された型を戻します。
 
 #### 宣言・定義
 -   定義場所：cJSON_Utils.h -> cJSON.h
@@ -65,7 +63,6 @@ JSON真偽値を扱うために使われる型です。
 ---
 
 ```c++
-#define cJSON_Invalid (0) 
 #define cJSON_False  (1 << 0) 
 #define cJSON_True   (1 << 1) 
 #define cJSON_NULL   (1 << 2) 
@@ -73,19 +70,16 @@ JSON真偽値を扱うために使われる型です。
 #define cJSON_String (1 << 4) 
 #define cJSON_Array  (1 << 5) 
 #define cJSON_Object (1 << 6) 
-#define cJSON_Raw    (1 << 7)
 ```
 
-cJSONノードの種類を識別するマクロです。
--	cJSON_Invalid	：無効な文字列（cJSONノードに変換できない）
--	cJSON_False	    ：JSON真偽値の偽（false）
--	cJSON_True	    ：JSON真偽値の真（true）
--	cJSON_NULL	    ：JSON null値
--	cJSON_Number	：JSON数値（整数や小数）
+バリューの種類を識別するマクロです。
+-	cJSON_False	    ：JSON真偽値（偽）
+-	cJSON_True	    ：JSON真偽値（真）
+-	cJSON_NULL	    ：null値
+-	cJSON_Number	：JSON数値
 -	cJSON_String	：JSON文字列
 -	cJSON_Array	    ：JSON配列
--	cJSON_Object	：JSONオブジェクト（キーとバリューのペアの集まり）
--	cJSON_Raw	    ：cJSONノードに変換されていない文字列
+-	cJSON_Object	：JSONオブジェクト
 
 #### 宣言・定義
 -   定義場所：cJSON_Utils.h -> cJSON.h
@@ -96,26 +90,37 @@ cJSONノードの種類を識別するマクロです。
 CJSON_PUBLIC(void) cJSON_Delete(cJSON *item);
 ```
 
-引数itemで指定されたcJSONノードとそのメンバ、格納されているcJSONノードをメモリ上から再帰的に解放します。
+引数itemで指定されたcJSONオブジェクトのメモリを解放します。
 - 入力（引数）：
-    -	item：削除したいcJSONノードへのポインタ
+    -	item：削除するcJSONオブジェクトへのポインタ
 - 出力（戻り値）：
     -	無し
  
 #### 宣言・定義
--   宣言場所：cJSON_Utils.h -> cJSON.h￥
+-   宣言場所：cJSON_Utils.h -> cJSON.h
 
 ---
 
 ```c++
 CJSON_PUBLIC(cJSON *) cJSON_CreateString(const char *string);
 ```
-引数stringで指定された文字列を元に、新たにcJSONノードを作成し、その種類（type）をcJSON_Stringに設定します。
+以下のようにメンバを設定したcJSONオブジェクトを作成します。
+```c++
+prev        = NULL;
+next        = NULL;
+child       = NULL;
+type        = cJSON_String;
+valuestring = string; // 引数stringを格納する
+valueint    = 0;
+valuedouble = 0.0;
+string      = NULL;
+```
+
 - 入力（引数）：
-    -	string：「JSON文字列」として作成したいテキスト
+    -	string：「JSON文字列」として作成する文字列
 - 出力（戻り値）：
-    - cJSONノードの作成に成功した場合：新たに作成したcJSONノードへのポインタ
-    - cJSONノードの作成に失敗した場合：NULL
+    - cJSONオブジェクトの作成に成功した場合：作成したcJSONオブジェクトへのポインタ
+    - cJSONオブジェクトの作成に失敗した場合：NULL
  
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
@@ -125,12 +130,22 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateString(const char *string);
 ```c++
 CJSON_PUBLIC(cJSON *) cJSON_CreateObject(void);
 ```
+以下のようにメンバを設定したcJSONオブジェクトを作成します。
+```c++
+prev        = NULL;
+next        = NULL;
+child       = NULL;
+type        = cJSON_Object;
+valuestring = NULL;
+valueint    = 0;
+valuedouble = 0.0;
+string      = NULL;
+```
 
-メモリ上に新たに空のcJSONノードを作成し、その種類（type）をcJSON_Objectに設定します。作成した時点では、キーとバリューのペアは含まれていません。
 - 入力（引数）：
     -	無し
 - 出力（戻り値）：
-    - 	cJSONノードの作成に成功した場合：新たに作成したcJSONノードへのポインタ
+    - 	cJSONノードの作成に成功した場合：作成したcJSONオブジェクトへのポインタ
     - 	cJSONノードの作成に失敗した場合：NULL
  
 #### 宣言・定義
@@ -141,12 +156,22 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateObject(void);
 ```c++
 CJSON_PUBLIC(cJSON *) cJSON_CreateArray(void );
 ```
+以下のようにメンバを設定したcJSONオブジェクトを作成します。
+```c++
+prev        = NULL;
+next        = NULL;
+child       = NULL;
+type        = cJSON_Array;
+valuestring = NULL;
+valueint    = 0;
+valuedouble = 0.0;
+string      = NULL;
+```
 
-新たにメモリ上にcJSONノードを作成し、その種類（type）をcJSON_Arrayに設定します。作成時点では、「JSON配列」にcJSONノードは含まれていません。
 - 入力（引数）：
     - 	無し
 - 出力（戻り値）：
-    - 	cJSONノードの作成に成功した場合：新たに作成された「JSON配列」のcJSONノードへのポインタ
+    - 	cJSONノードの作成に成功した場合：作成したcJSONオブジェクトへのポインタ
     - 	cJSONノードの作成に失敗した場合：NULL
 
 #### 宣言・定義
@@ -158,12 +183,23 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateArray(void );
 CJSON_PUBLIC(cJSON *) cJSON_Parse(const char *value);
 ```
 
-引数valueで指定された文字列を受け取り、その内容がJSON形式であるかを解析します。解析結果に応じて、対応するcJSONノードを構築します。
+引数valueで指定された文字列をcJSONオブジェクト群に変換します。
 - 入力（引数）：
-    - 	value：解析したい文字列
+    - 	value：変換する文字列
 - 出力（戻り値）：
-    - 	文字列の解析に成功した場合：解析結果として構築されたcJSONノードの最上位ノードへのポインタ
-    - 	文字列の解析に失敗した場合：NULL
+    - 	文字列の変換に成功した場合：変換したcJSONオブジェクト群のうち、0階層のcJSONオブジェクトへのポインタ
+    - 	文字列の変換に失敗した場合：NULL
+ 
+文字列をcJSONオブジェクト群に変換する例：\
+変換する文字列：
+```json
+{
+    "key1": "value1",
+    "key2": 1.0
+}
+```
+変換したcJSONオブジェクト群：
+<img width="802" height="738" alt="cJSONオブジェクト群の例 drawio" src="https://github.com/user-attachments/assets/e4ab4d30-7be2-461f-944d-06f007ead0d3" />
 
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
@@ -174,11 +210,11 @@ CJSON_PUBLIC(cJSON *) cJSON_Parse(const char *value);
 CJSON_PUBLIC(char *) cJSON_Print(const cJSON *item);
 ```
 
-引数itemで指定されたcJSONノードからJSON形式の文字列を生成して戻します。
+引数itemで指定されたitemから、JSON形式の文字列を生成します。
 - 入力（引数）：
-    - 	item：JSON形式の文字列として生成したいcJSONノードへのポインタ
+    - 	item：JSON形式の文字列を生成するcJSONオブジェクトへのポインタ
 - 出力（戻り値）：
-    - 	JSON形式の文字列の生成に成功した場合：生成されたJSON形式の文字列
+    - 	JSON形式の文字列の生成に成功した場合：生成したJSON形式の文字列
     - 	JSON形式の文字列の生成に失敗した場合：NULL
 
 #### 宣言・定義
@@ -190,15 +226,15 @@ CJSON_PUBLIC(char *) cJSON_Print(const cJSON *item);
 CJSON_PUBLIC(cJSON *) cJSON_Duplicate(const cJSON *item, cJSON_bool recurse);
 ```
 
-引数itemで指定されたcJSONノードを複製します。引数recurseを指定することで、引数itemに格納されているcJSONノード（next, prev, child）も再帰的に複製するかを制御できます。\
-・引数recurseがtrueの場合：引数itemに格納されているcJSONノードも複製され、複製されたcJSONノードが置き換わります。\
-・引数recurseがfalseの場合：引数itemに格納されているcJSONノードも複製され、元のcJSONノードが参照されます。
+引数itemで指定されたcJSONオブジェクトを複製します。引数recurseを指定して、引数itemが格納しているcJSONオブジェクト（next, prev, child）も複製するかを制御します。\
+・引数recurseがtrueの場合：引数itemが格納しているcJSONオブジェクトも複製し、複製したcJSONオブジェクトに置き換えます。\
+・引数recurseがfalseの場合：引数itemが格納しているcJSONオブジェクトは複製せず、引数itemが格納しているcJSONオブジェクトを参照します。
 - 入力（引数）：
-    - 	item：複製したいcJSONノードへのポインタ
-    - 	recurse：引数itemで指定されたに格納されているcJSONノードも再帰的に複製するかどうかの真偽値
+    - 	item：複製するcJSONオブジェクトへのポインタ
+    - 	recurse：引数itemで指定されたcJSONオブジェクトが格納しているcJSONオブジェクトも再帰的に複製するかの真偽値
 - 出力（戻り値）：
-    - 	cJSONノードの複製に成功した場合：複製されたcJSONノードへのポインタ
-    - 	cJSONノードの複製に失敗した場合：NULL
+    - 	cJSONオブジェクトの複製に成功した場合：複製したcJSONオブジェクトへのポインタ
+    - 	cJSONオブジェクトの複製に失敗した場合：NULL
 
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
@@ -208,14 +244,13 @@ CJSON_PUBLIC(cJSON *) cJSON_Duplicate(const cJSON *item, cJSON_bool recurse);
 ```c++
 CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToArray(cJSON *array, cJSON *item);
 ```
-
-引数arrayで指定された「JSON配列」に、引数itemで指定されたcJSONノードを「JSON配列」に追加します。
+引数itemで指定されたcJSONオブジェクトを、引数arrayで指定されたcJSONオブジェクト（JSON配列）に追加します。
 - 入力（引数）：
-    - 	array：cJSONノードを追加したい対象の「JSON配列」へのポインタ
-    - 	item：「JSON配列」に追加したいcJSONノードへのポインタ
+    - 	array：cJSONオブジェクトを追加する対象のcJSONオブジェクト（JSON配列）へのポインタ
+    - 	item：「JSON配列」に追加するcJSONオブジェクトへのポインタ
 - 出力（戻り値）：
-    - 	cJSONノードの「JSON配列」への追加が成功した場合：true
-    - 	cJSONノードの「JSON配列」への追加が失敗した場合：false
+    - 	cJSONオブジェクト（JSON配列）への追加が成功した場合：1
+    - 	cJSONオブジェクト（JSON配列）への追加が失敗した場合：0
 
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
@@ -226,14 +261,14 @@ CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToArray(cJSON *array, cJSON *item);
 CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToObject(cJSON *object, const char *string, cJSON *item);
 ```
 
-引数objectで指定された「JSONオブジェクト」に、引数stringで指定されたキーと、引数itemで指定されたcJSONノードをペアとして追加します。
+引数stringで指定されたキーと、引数itemで指定されたcJSONオブジェクトの組を、引数objectで指定されたcJSONオブジェクト（JSONオブジェクト）に追加します。
 - 入力（引数）：
-    - object：cJSONノードを追加したい対象の「JSONオブジェクト」へのポインタ
-    - string：「JSONオブジェクト」に追加するcJSONノードのキーに使用する文字列
-    - item：「JSONオブジェクト」に追加したいcJSONノードへのポインタ
+    - object：cJSONオブジェクトを追加する対象のcJSONオブジェクト（JSONオブジェクト）へのポインタ
+    - string：「JSONオブジェクト」に追加するcJSONオブジェクトのキーに使用する文字列
+    - item：「JSONオブジェクト」に追加するcJSONオブジェクトへのポインタ
 - 出力（戻り値）：
-    - cJSONノードの「JSONオブジェクト」への追加が成功した場合：true
-    - cJSONノードの「JSONオブジェクト」への追加が失敗した場合：false
+    - cJSONオブジェクト（JSONオブジェクト）への追加が成功した場合：1
+    - cJSONオブジェクト（JSONオブジェクト）への追加が失敗した場合：0
 
 #### 宣言・定義
 -   宣言場所：cJSON_Utils.h -> cJSON.h
@@ -278,8 +313,8 @@ int strcmp(const char *s1, const char *s2);
 引数s1で指定された文字列と引数s2で指定された文字列を先頭から1文字ずつ比較し、どちらが大きいか、小さいか、あるいは等しいかを判定します。
 
 - 入力（引数）：
-    - s1：比較したい1つ目の文字列
-    - s2：比較したい2つ目の文字列
+    - s1：比較する1つ目の文字列
+    - s2：比較する2つ目の文字列
 - 出力（戻り値）：
     - 引数s1で指定された文字列が引数s2で指定された文字列よりも辞書順で小さい場合：負の値
     - 引数s1で指定された文字列と引数s2で指定された文字列が等しい場合：0
@@ -298,7 +333,7 @@ size_t strlen(const char *s);
 引数sで指定された文字列の長さを計算します。文字列の先頭から、終端文字`\0`の直前までの文字数を返します。
 
 - 入力（引数）：
-    - s：長さを計算したい文字列
+    - s：長さを計算する文字列
 - 出力（戻り値）：
     - 終端文字`\0`の直前までの文字数
 
@@ -313,7 +348,7 @@ int tolower(int c);
 引数cで指定された文字コードが大文字のアルファベットであった場合に、それに対応する小文字に変換して返します。
 
 - 入力（引数）：
-    - c：変換したい文字の文字コードを表す整数
+    - c：変換する文字の文字コードを表す整数
 - 出力（戻り値）：
     - 引数cが'A'から'Z'までの大文字アルファベットの場合：対応する小文字の文字コード
     - それ以外の場合：引数cの値
@@ -329,7 +364,7 @@ double fabs(double a);
 引数aで指定された浮動点小数の絶対値を計算し、計算した結果を返します。
 
 - 入力（引数）：
-    - a：絶対値を計算したい値
+    - a：絶対値を計算する値
 - 出力（戻り値）：
     - 引数aの絶対値を計算した結果
 
@@ -344,7 +379,7 @@ void *malloc(size_t size);
 引数sizeで指定されたバイト数のメモリ領域をヒープ領域から確保し、その領域へのポインタを返します。
 
 - 入力（引数）：
-    - size：確保したいメモリ領域のバイト数
+    - size：確保するメモリ領域のバイト数
 - 出力（戻り値）：
     - メモリ領域の確保に成功した場合：確保されたメモリ領域の先頭アドレスを指すポインタ
     - メモリ領域の確保に失敗した場合：NULL
@@ -360,7 +395,7 @@ void free(void *ptr)
 引数ptrで指定されたメモリ領域を解放します。
 
 - 入力（引数）：
-    - ptr：解放したいメモリ領域
+    - ptr：解放するメモリ領域
 - 出力（戻り値）：
     - 無し
 
@@ -393,7 +428,7 @@ int printf(const char* str, ...);
 引数srcで指定された書式が含まれた文字列に従って、第二引数以降で指定された引数を文字列に変換し、標準出力します。
 
 - 入力（引数）：
-    - str：標準出力したい書式が含まれた文字列
+    - str：標準出力する書式が含まれた文字列
     - ...：引数strに含まれる書式の数だけ対応する変数を格納した可変長引数
 - 出力（戻り値）：
     - 文字列の標準出力に成功した場合：標準出力した文字数
