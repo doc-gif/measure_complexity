@@ -450,9 +450,10 @@ void create_patches(cJSON * const patches, const unsigned char * const path, cJS
     }
 }
 
-char* read_file_to_buffer(const char* filepath) {
-    FILE *fp;
+cJSON * load_json_file(const char* filepath) {
     char *buffer;
+    cJSON *json;
+    FILE *fp;
     long file_size;
     size_t read_size;
 
@@ -493,19 +494,6 @@ char* read_file_to_buffer(const char* filepath) {
 
     fclose(fp);
 
-    return buffer;
-}
-
-cJSON * load_json_file(const char* filepath) {
-    char *buffer;
-    cJSON *json;
-
-    buffer = read_file_to_buffer(filepath);
-
-    if (buffer == NULL) {
-        return NULL;
-    }
-
     json = cJSON_Parse(buffer);
     free(buffer);
 
@@ -514,35 +502,61 @@ cJSON * load_json_file(const char* filepath) {
 
 
 int main() {
-    const char *from_filepath;
-    const char *to_filepath;
-    char *patches_string;
-    cJSON *from_json;
-    cJSON *to_json;
-    cJSON *patches_array;
+    cJSON *example1, *from1, *from2, *from3, *from4, *from5, *from6, *to1, *to2, *to3, *to4, *to5, *to6;
+    cJSON *patches1, *patches2, *patches3, *patches4, *patches5, *patches6;
 
-    from_filepath = "from.json";
-    to_filepath = "to.json";
+    example1 = load_json_file("example1.json");
+    example1->child = sort_list(example1->child, cJSON_True);
 
-    from_json = load_json_file(from_filepath);
-    to_json = load_json_file(to_filepath);
+    patches1 = cJSON_CreateArray();
+    from1 = load_json_file("from1.json");
+    to1 = load_json_file("to1.json");
+    create_patches(patches1, "", from1, to1, cJSON_False);
 
-    if (from_json == NULL || to_json == NULL) {
-        cJSON_Delete(from_json);
-        cJSON_Delete(to_json);
-        return 1;
-    }
+    patches2 = cJSON_CreateArray();
+    from2 = load_json_file("from2.json");
+    to2 = load_json_file("to2.json");
+    create_patches(patches2, "", from2, to2, cJSON_False);
 
-    patches_array = cJSON_CreateArray();
+    patches3 = cJSON_CreateArray();
+    from3 = load_json_file("from3.json");
+    to3 = load_json_file("to3.json");
+    create_patches(patches3, "", from3, to3, cJSON_False);
 
-    create_patches(patches_array, (const unsigned char *)"", from_json, to_json, cJSON_True);
+    patches4 = cJSON_CreateArray();
+    from4 = load_json_file("from4.json");
+    to4 = load_json_file("to4.json");
+    create_patches(patches4, "", from4, to4, cJSON_False);
 
-    patches_string = cJSON_Print(patches_array);
-    printf("Generated Patches:\n%s\n", patches_string);
-    free(patches_string);
-    cJSON_Delete(from_json);
-    cJSON_Delete(to_json);
-    cJSON_Delete(patches_array);
+    patches5 = cJSON_CreateArray();
+    from5 = load_json_file("from5.json");
+    to5 = load_json_file("to5.json");
+    create_patches(patches5, "", from5, to5, cJSON_False);
+
+    patches6 = cJSON_CreateArray();
+    from6 = load_json_file("from6.json");
+    to6 = load_json_file("to6.json");
+    create_patches(patches6, "", from6, to6, cJSON_False);
+
+    cJSON_Delete(example1);
+    cJSON_Delete(from1);
+    cJSON_Delete(from2);
+    cJSON_Delete(from3);
+    cJSON_Delete(from4);
+    cJSON_Delete(from5);
+    cJSON_Delete(from6);
+    cJSON_Delete(to1);
+    cJSON_Delete(to2);
+    cJSON_Delete(to3);
+    cJSON_Delete(to4);
+    cJSON_Delete(to5);
+    cJSON_Delete(to6);
+    cJSON_Delete(patches1);
+    cJSON_Delete(patches2);
+    cJSON_Delete(patches3);
+    cJSON_Delete(patches4);
+    cJSON_Delete(patches5);
+    cJSON_Delete(patches6);
 
     return 0;
 }

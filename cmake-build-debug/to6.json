@@ -1,0 +1,10 @@
+{
+  "name": "Jane Doe",
+  "age": 31,
+  "occupation": "Engineer",
+  "tags": [
+    "json",
+    "c",
+    "patch"
+  ]
+}
