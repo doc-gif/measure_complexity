@@ -7,7 +7,7 @@
 #include "iniparser.h"
 
 /*---------------------------- Defines -------------------------------------*/
-#define ASCIILINESZ         (1024)
+#define ASCIILINESZ         (32)
 #define INI_INVALID_KEY     ((char*)-1)
 
 /*---------------------------------------------------------------------------
@@ -286,10 +286,6 @@ dictionary *iniparser_load_file(FILE *in, const char *ininame) {
         return NULL;
     }
 
-    memset(line, 0, ASCIILINESZ);
-    memset(section, 0, ASCIILINESZ);
-    memset(key, 0, ASCIILINESZ);
-    memset(val, 0, ASCIILINESZ);
     last = 0;
 
     while (fgets(line + last, ASCIILINESZ - last, in) != NULL) {
@@ -297,15 +293,6 @@ dictionary *iniparser_load_file(FILE *in, const char *ininame) {
         len = (int) strlen(line) - 1;
         if (len <= 0)
             continue;
-        /* Safety check against buffer overflows */
-        if (line[len] != '\n' && !feof(in)) {
-            iniparser_error_callback(
-                "iniparser: input line too long in %s (%d)\n",
-                ininame,
-                lineno);
-            dictionary_del(dict);
-            return NULL;
-        }
         /* Get rid of \n and spaces at end of line */
         while ((len >= 0) &&
                ((line[len] == '\n') || (isspace((unsigned char) line[len])))) {
@@ -350,7 +337,6 @@ dictionary *iniparser_load_file(FILE *in, const char *ininame) {
             default:
                 break ;
         }
-        memset(line, 0, ASCIILINESZ);
         last = 0;
         if (mem_err < 0) {
             iniparser_error_callback("iniparser: memory allocation failure\n");
@@ -385,7 +371,7 @@ void iniparser_freedict(dictionary *d) {
 }
 
 int main() {
-    dictionary *ini1, *ini2, *ini3, *ini4, *ini5, *ini6, *ini7;
+    dictionary *ini1, *ini2, *ini3, *ini4, *ini5, *ini6, *ini7, *ini8;
     char *value1, *value2, *value3, *value4;
     double value5;
     int value6;
@@ -412,8 +398,9 @@ int main() {
     value6 = iniparser_getboolean(ini6, ":key1", -1);
     
     ini7 = iniparser_load("example7.ini");
-    value7 = iniparser_getint64(ini7, ":key1", -1); 
+    value7 = iniparser_getint64(ini7, ":key1", -1);
 
+    ini8 = iniparser_load("example8.ini");
 
     iniparser_freedict(ini1);
     ini1 = NULL;
