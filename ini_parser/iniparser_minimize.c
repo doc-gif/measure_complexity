@@ -398,7 +398,6 @@ int main() {
     value6 = iniparser_getboolean(ini6, ":key1", -1);
     
     ini7 = iniparser_load("example7.ini");
-    value7 = iniparser_getint64(ini7, ":key1", -1);
 
     ini8 = iniparser_load("example8.ini");
 
