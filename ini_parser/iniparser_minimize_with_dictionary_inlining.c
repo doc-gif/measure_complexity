@@ -37,9 +37,9 @@ dictionary *dictionary_new(size_t size) {
         d->size = size;
         d->val = (char **) calloc(size, sizeof *d->val);
         d->key = (char **) calloc(size, sizeof *d->key);
-        if (!d->size || !d->val) {
-            free((void *) d->size);
+        if (!d->val || !d->key) {
             free((void *) d->val);
+            free((void *) d->key);
             free(d);
             d = NULL;
         }

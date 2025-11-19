@@ -83,9 +83,9 @@ dictionary *dictionary_new(size_t size) {
         d->size = size;
         d->val = (char **) calloc(size, sizeof *d->val);
         d->key = (char **) calloc(size, sizeof *d->key);
-        if (!d->size || !d->val) {
-            free((void *) d->size);
+        if (!d->val || !d->key) {
             free((void *) d->val);
+            free((void *) d->key);
             free(d);
             d = NULL;
         }
@@ -122,11 +122,7 @@ int dictionary_set(dictionary *d, const char *key, const char *val) {
                 if (d->val[i] != NULL)
                     free(d->val[i]);
 
-                if (val) {
-                    d->val[i] = xstrdup(val);
-                } else {
-                    d->val[i] = NULL;
-                }
+                d->val[i] = xstrdup(val);
                 return 0;
             }
         }
@@ -139,12 +135,7 @@ int dictionary_set(dictionary *d, const char *key, const char *val) {
         if (++i == d->size) i = 0;
     }
     d->key[i] = xstrdup(key);
-
-    if (val) {
-        d->val[i] = xstrdup(val);
-    } else {
-        d->val[i] = NULL;
-    }
+    d->val[i] = xstrdup(val);
 
     d->n++;
     return 0;
