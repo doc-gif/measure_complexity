@@ -117,39 +117,40 @@ int dictionary_set(dictionary * d, const char * key, const char * val)
 
     if (d==NULL || key==NULL) return -1 ;
 
-    /* Find if value is already in dictionary */
     if (d->n>0) {
         for (i=0 ; i<d->size ; i++) {
             if (d->key[i]==NULL)
                 continue ;
-            if (!strcmp(key, d->key[i])) {   /* Same key */
-                /* Found a value: modify and return */
+            if (!strcmp(key, d->key[i])) {
                 if (d->val[i]!=NULL)
                     free(d->val[i]);
-                d->val[i] = (val ? xstrdup(val) : NULL);
-                /* Value has been modified: return */
+
+                if (val) {
+                    d->val[i] = xstrdup(val);
+                } else {
+                    d->val[i] = NULL;
+                }
                 return 0 ;
             }
         }
     }
-    /* Add a new value */
-    /* See if dictionary needs to grow */
     if (d->n==d->size) {
-        /* Reached maximum size: reallocate dictionary */
         // TODO: dictionary_growするのではなく、ディクショナリの最大数に達してエラーが返るようにコード改変
         // if (dictionary_grow(d) != 0)
             return -1;
     }
 
-    /* Insert key in the first empty slot. Start at d->n and wrap at
-       d->size. Because d->n < d->size this will necessarily
-       terminate. */
     for (i=d->n ; d->key[i] ; ) {
         if(++i == d->size) i = 0;
     }
-    /* Copy key */
     d->key[i]  = xstrdup(key);
-    d->val[i]  = (val ? xstrdup(val) : NULL) ;
+
+    if (val) {
+        d->val[i] = xstrdup(val);
+    } else {
+        d->val[i] = NULL;
+    }
+
     d->n ++ ;
     return 0 ;
 }
