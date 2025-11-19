@@ -28,44 +28,43 @@ typedef enum _line_status_ {
 static char *duplicate_string(const char *s) {
     char *t;
     size_t len;
-    if (!s) {
+
+    if (!s)
         return NULL;
-    }
+
     len = strlen(s) + 1;
-    t = (char *)malloc(len);
+    t = (char *) malloc(len);
     if (t) {
         memcpy(t, s, len);
     }
     return t;
 }
 
-static void trim_string(char *s) {
-    if (!s) {
-        return;
-    }
-    char *dest = s;
-    char *end = s + strlen(s);
+static void trim_string(char *str) {
+    char *start, *end;
 
-    while (isspace((unsigned char)*s)) {
-        s++;
+    if (str == NULL) return;
+
+    start = str;
+    while (isspace((unsigned char)*start)) {
+        start++;
     }
 
-    while (end > s && isspace((unsigned char)*(end - 1))) {
+    end = start + strlen(start);
+    while (end > start && isspace((unsigned char)*(end - 1))) {
         end--;
     }
     *end = '\0';
 
-    if (dest != s) {
-        memmove(dest, s, end - s + 1);
-    }
+    memmove(str, start, end - start + 1);
 }
 
-static void string_to_lower(char *s) {
-    if (!s) {
-        return;
-    }
-    for (; *s; ++s) {
-        *s = (char)tolower((unsigned char)*s);
+static void string_to_lower(char *str) {
+    if (str == NULL) return;
+
+    while (*str) {
+        *str = (char)tolower((unsigned char)*str);
+        str++;
     }
 }
 
@@ -80,9 +79,9 @@ dictionary *dictionary_new(size_t size) {
         d->size = size;
         d->val = (char **) calloc(size, sizeof *d->val);
         d->key = (char **) calloc(size, sizeof *d->key);
-        if (!d->size || !d->val) {
-            free((void *) d->size);
-            free((void *) d->val);
+        if (!d->val || !d->key) {
+            free(d->val);
+            free(d->key);
             free(d);
             d = NULL;
         }
@@ -98,7 +97,7 @@ const char *dictionary_get(const dictionary *d, const char *key, const char *def
 
     for (i = 0; i < d->size; i++) {
         if (d->key[i] == NULL)
-            continue;
+            continue ;
         if (!strcmp(key, d->key[i])) {
             return d->val[i];
         }
@@ -113,16 +112,14 @@ int dictionary_set(dictionary *d, const char *key, const char *val) {
 
     if (d->n > 0) {
         for (i = 0; i < d->size; i++) {
-            if (d->key[i] == NULL)
-                continue;
-            if (!strcmp(key, d->key[i])) {
-                if (d->val[i] != NULL)
-                    free(d->val[i]);
+            if (d->key[i] != NULL && strcmp(key, d->key[i]) == 0) {
+                free(d->val[i]);
                 d->val[i] = duplicate_string(val);
                 return 0;
             }
         }
     }
+
     if (d->n == d->size) {
         return -1;
     }
@@ -192,10 +189,9 @@ static void parse_quoted_value(char *value, char quote) {
         return;
 
     quoted = duplicate_string(value);
-
     if (!quoted) {
         iniparser_error_callback("iniparser: memory allocation failure\n");
-        value[v] = '\0';
+        value[0] = '\0';
         return;
     }
 
@@ -206,7 +202,6 @@ static void parse_quoted_value(char *value, char quote) {
                 q++;
                 continue;
             }
-
             if (c == quote) {
                 break;
             }
@@ -230,16 +225,11 @@ static line_status iniparser_line(
     size_t len;
     int d_quote;
 
-    if (!input_line) {
+    if (input_line == NULL) {
         return LINE_EMPTY;
     }
 
     line = duplicate_string(input_line);
-    if (!line) {
-        iniparser_error_callback("iniparser: memory allocation failure\n");
-        return LINE_ERROR;
-    }
-
     trim_string(line);
     len = strlen(line);
 
@@ -256,15 +246,14 @@ static line_status iniparser_line(
         trim_string(section);
         string_to_lower(section);
         sta = LINE_SECTION;
-    } else if ((d_quote = sscanf(line, "%[^=] = \"%[^\n]\"", key, value)) == 2 ||
-               (sscanf(line, "%[^=] = '%[^\n]'", key, value) == 2)) {
+    } else if ((d_quote = sscanf(line, "%[^=] = \"%[^\n]\"", key, value)) == 2
+               || sscanf(line, "%[^=] = '%[^\n]'", key, value) == 2) {
         trim_string(key);
         string_to_lower(key);
-        if (d_quote == 2) {
+        if (d_quote == 2)
             parse_quoted_value(value, '"');
-        } else {
+        else
             parse_quoted_value(value, '\'');
-        }
         sta = LINE_VALUE;
     } else if (sscanf(line, "%[^=] = %[^;#]", key, value) == 2) {
         trim_string(key);
@@ -274,8 +263,8 @@ static line_status iniparser_line(
             value[0] = 0;
         }
         sta = LINE_VALUE;
-    } else if (sscanf(line, "%[^=] = %[;#]", key, value) == 2 ||
-               sscanf(line, "%[^=] %[=]", key, value) == 2) {
+    } else if (sscanf(line, "%[^=] = %[;#]", key, value) == 2
+               || sscanf(line, "%[^=] %[=]", key, value) == 2) {
         trim_string(key);
         string_to_lower(key);
         value[0] = 0;
@@ -308,7 +297,6 @@ dictionary *iniparser_load_file(FILE *in, const char *ininame) {
         return NULL;
     }
 
-    section[0] = 0;
     last = 0;
 
     while (fgets(line + last, ASCIILINESZ - last, in) != NULL) {
@@ -326,23 +314,23 @@ dictionary *iniparser_load_file(FILE *in, const char *ininame) {
         }
         if (line[len] == '\\') {
             last = len;
-            continue;
+            continue ;
         } else {
             last = 0;
         }
         switch (iniparser_line(line, section, key, val)) {
             case LINE_EMPTY:
             case LINE_COMMENT:
-                break;
+                break ;
 
             case LINE_SECTION:
                 mem_err = dictionary_set(dict, section, NULL);
-                break;
+                break ;
 
             case LINE_VALUE:
                 sprintf(tmp, "%s:%s", section, key);
                 mem_err = dictionary_set(dict, tmp, val);
-                break;
+                break ;
 
             case LINE_ERROR:
                 iniparser_error_callback(
@@ -354,12 +342,12 @@ dictionary *iniparser_load_file(FILE *in, const char *ininame) {
                 break;
 
             default:
-                break;
+                break ;
         }
         last = 0;
         if (mem_err < 0) {
             iniparser_error_callback("iniparser: memory allocation failure\n");
-            break;
+            break ;
         }
     }
     if (errs) {
