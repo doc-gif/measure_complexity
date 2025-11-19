@@ -71,19 +71,18 @@ static unsigned strstrip(char *s) {
     return last - s;
 }
 
-dictionary * dictionary_new(size_t size)
-{
-    dictionary  *   d ;
+dictionary *dictionary_new(size_t size) {
+    dictionary *d;
 
     /* If no size was specified, allocate space for DICTMINSZ */
-    if (size<DICTMINSZ) size=DICTMINSZ ;
+    if (size < DICTMINSZ) size = DICTMINSZ;
 
-    d = (dictionary*) calloc(1, sizeof *d) ;
+    d = (dictionary *) calloc(1, sizeof *d);
 
     if (d) {
-        d->size = size ;
-        d->val  = (char**) calloc(size, sizeof *d->val);
-        d->key  = (char**) calloc(size, sizeof *d->key);
+        d->size = size;
+        d->val = (char **) calloc(size, sizeof *d->val);
+        d->key = (char **) calloc(size, sizeof *d->key);
         if (!d->size || !d->val) {
             free((void *) d->size);
             free((void *) d->val);
@@ -91,38 +90,36 @@ dictionary * dictionary_new(size_t size)
             d = NULL;
         }
     }
-    return d ;
+    return d;
 }
 
-const char * dictionary_get(const dictionary * d, const char * key, const char * def)
-{
-    size_t      i ;
+const char *dictionary_get(const dictionary *d, const char *key, const char *def) {
+    size_t i;
 
-    if(d == NULL || key == NULL)
-       return def ;
+    if (d == NULL || key == NULL)
+        return def;
 
-    for (i=0 ; i<d->size ; i++) {
-        if (d->key[i]==NULL)
+    for (i = 0; i < d->size; i++) {
+        if (d->key[i] == NULL)
             continue ;
         if (!strcmp(key, d->key[i])) {
-            return d->val[i] ;
+            return d->val[i];
         }
     }
-    return def ;
+    return def;
 }
 
-int dictionary_set(dictionary * d, const char * key, const char * val)
-{
-    size_t         i ;
+int dictionary_set(dictionary *d, const char *key, const char *val) {
+    size_t i;
 
-    if (d==NULL || key==NULL) return -1 ;
+    if (d == NULL || key == NULL) return -1;
 
-    if (d->n>0) {
-        for (i=0 ; i<d->size ; i++) {
-            if (d->key[i]==NULL)
+    if (d->n > 0) {
+        for (i = 0; i < d->size; i++) {
+            if (d->key[i] == NULL)
                 continue ;
             if (!strcmp(key, d->key[i])) {
-                if (d->val[i]!=NULL)
+                if (d->val[i] != NULL)
                     free(d->val[i]);
 
                 if (val) {
@@ -130,20 +127,18 @@ int dictionary_set(dictionary * d, const char * key, const char * val)
                 } else {
                     d->val[i] = NULL;
                 }
-                return 0 ;
+                return 0;
             }
         }
     }
-    if (d->n==d->size) {
-        // TODO: dictionary_growするのではなく、ディクショナリの最大数に達してエラーが返るようにコード改変
-        // if (dictionary_grow(d) != 0)
-            return -1;
+    if (d->n == d->size) {
+        return -1;
     }
 
-    for (i=d->n ; d->key[i] ; ) {
-        if(++i == d->size) i = 0;
+    for (i = d->n; d->key[i];) {
+        if (++i == d->size) i = 0;
     }
-    d->key[i]  = xstrdup(key);
+    d->key[i] = xstrdup(key);
 
     if (val) {
         d->val[i] = xstrdup(val);
@@ -151,8 +146,8 @@ int dictionary_set(dictionary * d, const char * key, const char * val)
         d->val[i] = NULL;
     }
 
-    d->n ++ ;
-    return 0 ;
+    d->n++;
+    return 0;
 }
 
 static int default_error_callback(const char *format, ...) {
@@ -187,7 +182,7 @@ const char *iniparser_getstring(const dictionary *d, const char *key, const char
     return sval;
 }
 
-void iniparser_freedict(dictionary * d) {
+void iniparser_freedict(dictionary *d) {
     dictionary_del(d);
 }
 
@@ -429,7 +424,7 @@ int main() {
 
     ini6 = iniparser_load("example6.ini");
     value6 = iniparser_getstring(ini6, ":key1", "NOT_FOUND");
-    
+
     ini7 = iniparser_load("example7.ini");
 
     ini8 = iniparser_load("example8.ini");
