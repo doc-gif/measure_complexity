@@ -2,13 +2,16 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
-#include "iniparser.h"
+#include "dictionary_del_func.h"
 
 /*---------------------------- Defines -------------------------------------*/
 #define ASCIILINESZ         (32)
 #define INI_INVALID_KEY     ((char*)-1)
+#define DICTMINSZ   128
 
 /*---------------------------------------------------------------------------
                         Private to this module
@@ -68,6 +71,89 @@ static unsigned strstrip(char *s) {
     return last - s;
 }
 
+dictionary * dictionary_new(size_t size)
+{
+    dictionary  *   d ;
+
+    /* If no size was specified, allocate space for DICTMINSZ */
+    if (size<DICTMINSZ) size=DICTMINSZ ;
+
+    d = (dictionary*) calloc(1, sizeof *d) ;
+
+    if (d) {
+        d->size = size ;
+        d->val  = (char**) calloc(size, sizeof *d->val);
+        d->key  = (char**) calloc(size, sizeof *d->key);
+        if (!d->size || !d->val) {
+            free((void *) d->size);
+            free((void *) d->val);
+            free(d);
+            d = NULL;
+        }
+    }
+    return d ;
+}
+
+const char * dictionary_get(const dictionary * d, const char * key, const char * def)
+{
+    size_t      i ;
+
+    if(d == NULL || key == NULL)
+       return def ;
+
+    for (i=0 ; i<d->size ; i++) {
+        if (d->key[i]==NULL)
+            continue ;
+        if (!strcmp(key, d->key[i])) {
+            return d->val[i] ;
+        }
+    }
+    return def ;
+}
+
+int dictionary_set(dictionary * d, const char * key, const char * val)
+{
+    size_t         i ;
+
+    if (d==NULL || key==NULL) return -1 ;
+
+    /* Find if value is already in dictionary */
+    if (d->n>0) {
+        for (i=0 ; i<d->size ; i++) {
+            if (d->key[i]==NULL)
+                continue ;
+            if (!strcmp(key, d->key[i])) {   /* Same key */
+                /* Found a value: modify and return */
+                if (d->val[i]!=NULL)
+                    free(d->val[i]);
+                d->val[i] = (val ? xstrdup(val) : NULL);
+                /* Value has been modified: return */
+                return 0 ;
+            }
+        }
+    }
+    /* Add a new value */
+    /* See if dictionary needs to grow */
+    if (d->n==d->size) {
+        /* Reached maximum size: reallocate dictionary */
+        // TODO: dictionary_growするのではなく、ディクショナリの最大数に達してエラーが返るようにコード改変
+        // if (dictionary_grow(d) != 0)
+            return -1;
+    }
+
+    /* Insert key in the first empty slot. Start at d->n and wrap at
+       d->size. Because d->n < d->size this will necessarily
+       terminate. */
+    for (i=d->n ; d->key[i] ; ) {
+        if(++i == d->size) i = 0;
+    }
+    /* Copy key */
+    d->key[i]  = xstrdup(key);
+    d->val[i]  = (val ? xstrdup(val) : NULL) ;
+    d->n ++ ;
+    return 0 ;
+}
+
 static int default_error_callback(const char *format, ...) {
     int ret;
     va_list argptr;
@@ -100,57 +186,10 @@ const char *iniparser_getstring(const dictionary *d, const char *key, const char
     return sval;
 }
 
-long int iniparser_getlongint(const dictionary *d, const char *key, long int notfound) {
-    const char *str;
-
-    str = iniparser_getstring(d, key, INI_INVALID_KEY);
-    if (str == NULL || str == INI_INVALID_KEY) return notfound;
-    return strtol(str, NULL, 0);
+void iniparser_freedict(dictionary * d) {
+    dictionary_del(d);
 }
 
-int64_t iniparser_getint64(const dictionary *d, const char *key, int64_t notfound) {
-    const char *str;
-
-    str = iniparser_getstring(d, key, INI_INVALID_KEY);
-    if (str == NULL || str == INI_INVALID_KEY) return notfound;
-    return strtoimax(str, NULL, 0);
-}
-
-uint64_t iniparser_getuint64(const dictionary *d, const char *key, uint64_t notfound) {
-    const char *str;
-
-    str = iniparser_getstring(d, key, INI_INVALID_KEY);
-    if (str == NULL || str == INI_INVALID_KEY) return notfound;
-    return strtoumax(str, NULL, 0);
-}
-
-int iniparser_getint(const dictionary *d, const char *key, int notfound) {
-    return (int) iniparser_getlongint(d, key, notfound);
-}
-
-double iniparser_getdouble(const dictionary *d, const char *key, double notfound) {
-    const char *str;
-
-    str = iniparser_getstring(d, key, INI_INVALID_KEY);
-    if (str == NULL || str == INI_INVALID_KEY) return notfound;
-    return atof(str);
-}
-
-int iniparser_getboolean(const dictionary *d, const char *key, int notfound) {
-    int ret;
-    const char *c;
-
-    c = iniparser_getstring(d, key, INI_INVALID_KEY);
-    if (c == NULL || c == INI_INVALID_KEY) return notfound;
-    if (c[0] == 'y' || c[0] == 'Y' || c[0] == '1' || c[0] == 't' || c[0] == 'T') {
-        ret = 1;
-    } else if (c[0] == 'n' || c[0] == 'N' || c[0] == '0' || c[0] == 'f' || c[0] == 'F') {
-        ret = 0;
-    } else {
-        ret = notfound;
-    }
-    return ret;
-}
 
 static void parse_quoted_value(char *value, char quote) {
     char c;
@@ -344,7 +383,7 @@ dictionary *iniparser_load_file(FILE *in, const char *ininame) {
         }
     }
     if (errs) {
-        dictionary_del(dict);
+        iniparser_freedict(dict);
         dict = NULL;
     }
     return dict;
@@ -365,21 +404,14 @@ dictionary *iniparser_load(const char *ininame) {
     return dict;
 }
 
-
-void iniparser_freedict(dictionary *d) {
-    dictionary_del(d);
-}
-
 int main() {
     dictionary *ini1, *ini2, *ini3, *ini4, *ini5, *ini6, *ini7, *ini8;
-    char *value1, *value2, *value3, *value4;
-    double value5;
-    int value6;
+    char *value1, *value2, *value3, *value4, *value5, *value6;
     int64_t value7;
 
     iniparser_set_error_callback(NULL);
 
-    iniparser_load("example1.ini");
+    ini1 = iniparser_load("example1.ini");
 
     ini2 = iniparser_load("example2.ini");
     value1 = iniparser_getstring(ini2, ":key1", "NOT_FOUND");
@@ -392,10 +424,10 @@ int main() {
     value4 = iniparser_getstring(ini4, "section1:key1", "NOT_FOUND");
 
     ini5 = iniparser_load("example5.ini");
-    value5 = iniparser_getdouble(ini5, "section1:key2", -1.0);
+    value5 = iniparser_getstring(ini5, "section1:key2", "NOT_FOUND");
 
     ini6 = iniparser_load("example6.ini");
-    value6 = iniparser_getboolean(ini6, ":key1", -1);
+    value6 = iniparser_getstring(ini6, ":key1", "NOT_FOUND");
     
     ini7 = iniparser_load("example7.ini");
 
