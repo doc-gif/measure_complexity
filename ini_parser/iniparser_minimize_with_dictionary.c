@@ -11,7 +11,7 @@
 /*---------------------------- Defines -------------------------------------*/
 #define ASCIILINESZ         (32)
 #define INI_INVALID_KEY     ((char*)-1)
-#define DICTMINSZ   128
+#define DICTMINSZ   3
 
 /*---------------------------------------------------------------------------
                         Private to this module
@@ -392,33 +392,21 @@ dictionary *iniparser_load(const char *ininame) {
 }
 
 int main() {
-    dictionary *ini1, *ini2, *ini3, *ini4, *ini5, *ini6, *ini7, *ini8;
-    char *value1, *value2, *value3, *value4, *value5, *value6;
-    int64_t value7;
+    dictionary *ini1, *ini2, *ini3;
+    char *value1, *value2, *value3;
 
     iniparser_set_error_callback(NULL);
 
     ini1 = iniparser_load("example1.ini");
+    value1 = iniparser_getstring(ini1, "section1:key1", "NOT_FOUND");
 
     ini2 = iniparser_load("example2.ini");
-    value1 = iniparser_getstring(ini2, ":key1", "NOT_FOUND");
+    value2 = iniparser_getstring(ini2, "section1:key3", "NOT_FOUND");
 
     ini3 = iniparser_load("example3.ini");
-    value2 = iniparser_getstring(ini3, ":key1", "NOT_FOUND");
-    value3 = iniparser_getstring(ini3, ":key2", "NOT_FOUND");
+    value3 = iniparser_getstring(ini3, "section1:key1", "NOT_FOUND");
 
-    ini4 = iniparser_load("example4.ini");
-    value4 = iniparser_getstring(ini4, "section1:key1", "NOT_FOUND");
-
-    ini5 = iniparser_load("example5.ini");
-    value5 = iniparser_getstring(ini5, "section1:key2", "NOT_FOUND");
-
-    ini6 = iniparser_load("example6.ini");
-    value6 = iniparser_getstring(ini6, ":key1", "NOT_FOUND");
-
-    ini7 = iniparser_load("example7.ini");
-
-    ini8 = iniparser_load("example8.ini");
+    iniparser_load("example4.ini");
 
     iniparser_freedict(ini1);
     ini1 = NULL;
@@ -426,14 +414,6 @@ int main() {
     ini2 = NULL;
     iniparser_freedict(ini3);
     ini3 = NULL;
-    iniparser_freedict(ini4);
-    ini4 = NULL;
-    iniparser_freedict(ini5);
-    ini5 = NULL;
-    iniparser_freedict(ini6);
-    ini6 = NULL;
-    iniparser_freedict(ini7);
-    ini7 = NULL;
 
     return 0;
 }
