@@ -318,9 +318,7 @@ static cJSON_bool parse_value(cJSON *const item, parse_buffer *const input_buffe
         return parse_string(item, input_buffer);
     }
     /* number */
-    if (can_access_at_index(input_buffer, 0) && ((buffer_at_offset(input_buffer)[0] == '-') || (
-                                                     (buffer_at_offset(input_buffer)[0] >= '0') && (buffer_at_offset(
-                                                         input_buffer)[0] <= '9')))) {
+    if (can_access_at_index(input_buffer, 0) && ((buffer_at_offset(input_buffer)[0] == '-') || ((buffer_at_offset(input_buffer)[0] >= '0') && (buffer_at_offset(input_buffer)[0] <= '9')))) {
         return parse_number(item, input_buffer);
     }
     /* array */
@@ -596,29 +594,6 @@ cJSON *load_json_file(const char *filepath) {
     free(buffer);
 
     return json;
-}
-
-/* string comparison which doesn't consider NULL pointers equal */
-static int compare_strings(const unsigned char *string1, const unsigned char *string2, const cJSON_bool case_sensitive) {
-    if ((string1 == NULL) || (string2 == NULL)) {
-        return 1;
-    }
-
-    if (string1 == string2) {
-        return 0;
-    }
-
-    if (case_sensitive) {
-        return strcmp((const char *) string1, (const char *) string2);
-    }
-
-    for (; tolower(*string1) == tolower(*string2); (void) string1++, string2++) {
-        if (*string1 == '\0') {
-            return 0;
-        }
-    }
-
-    return tolower(*string1) - tolower(*string2);
 }
 
 /* sort lists using mergesort */
