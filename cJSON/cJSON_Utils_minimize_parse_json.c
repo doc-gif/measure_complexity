@@ -46,7 +46,7 @@ typedef struct {
     size_t depth;
 } parse_buffer;
 
-static cJSON *cJSON_New_Item() {
+static cJSON *create_new_item() {
     cJSON *node = (cJSON *) malloc(sizeof(cJSON));
     if (node) {
         memset(node, '\0', sizeof(cJSON));
@@ -56,12 +56,20 @@ static cJSON *cJSON_New_Item() {
 }
 
 static cJSON_bool can_read(const parse_buffer *const buffer, size_t size) {
-    return ((buffer->offset + size) <= buffer->length) ? true : false;
+    if (buffer == NULL) {
+        return false;
+    }
+
+    return buffer->offset + size <= buffer->length;
 }
 
 /* check if the buffer can be accessed at the given index (starting with 0) */
 static cJSON_bool can_access_at_index(const parse_buffer *const buffer, size_t index) {
-    return ((buffer->offset + index) < buffer->length) ? true : false;
+    if (buffer == NULL) {
+        return false;
+    }
+
+    return buffer->offset + index < buffer->length;
 }
 
 static const unsigned char *buffer_at_offset(const parse_buffer *const buffer) {
@@ -258,7 +266,7 @@ static parse_buffer *skip_utf8_bom(parse_buffer *const buffer) {
 }
 
 /* Parse an object - create a new root, and populate. */
-CJSON_PUBLIC(cJSON *) cJSON_ParseWithLengthOpts(const char *value, size_t buffer_length) {
+CJSON_PUBLIC(cJSON *) json_parse(const char *value, size_t buffer_length) {
     parse_buffer buffer = {0, 0, 0, 0};
     cJSON *item = NULL;
 
@@ -270,7 +278,7 @@ CJSON_PUBLIC(cJSON *) cJSON_ParseWithLengthOpts(const char *value, size_t buffer
     buffer.length = buffer_length;
     buffer.offset = 0;
 
-    item = cJSON_New_Item();
+    item = create_new_item();
     if (item == NULL) {
         return NULL;
     }
@@ -342,7 +350,7 @@ static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffe
     /* loop through the comma separated array elements */
     do {
         /* allocate next item */
-        cJSON *new_item = cJSON_New_Item();
+        cJSON *new_item = create_new_item();
         if (new_item == NULL) {
             isSuccess = false;
             break;
@@ -396,7 +404,7 @@ static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buff
     /* loop through the comma separated array elements */
     do {
         /* allocate next item */
-        cJSON *new_item = cJSON_New_Item();
+        cJSON *new_item = create_new_item();
         if (new_item == NULL) {
             isSuccess = false;
             break;
@@ -509,15 +517,14 @@ cJSON *load_json_file(const char *filepath) {
 
     fclose(fp);
 
-    json = cJSON_ParseWithLengthOpts(buffer, strlen(buffer) + sizeof(""));
+    json = json_parse(buffer, strlen(buffer) + sizeof(""));
     free(buffer);
 
     return json;
 }
 
 /* string comparison which doesn't consider NULL pointers equal */
-static int compare_strings(const unsigned char *string1, const unsigned char *string2,
-                           const cJSON_bool case_sensitive) {
+static int compare_strings(const unsigned char *string1, const unsigned char *string2, const cJSON_bool case_sensitive) {
     if ((string1 == NULL) || (string2 == NULL)) {
         return 1;
     }
@@ -553,10 +560,7 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive) {
         return result;
     }
 
-    while ((current_item != NULL) && (current_item->next != NULL) && (compare_strings(
-                                                                          (unsigned char *) current_item->string,
-                                                                          (unsigned char *) current_item->next->string,
-                                                                          case_sensitive) < 0)) {
+    while ((current_item != NULL) && (current_item->next != NULL) && (compare_strings((unsigned char *) current_item->string,(unsigned char *) current_item->next->string,case_sensitive) < 0)) {
         /* Test for list sorted. */
         current_item = current_item->next;
     }
