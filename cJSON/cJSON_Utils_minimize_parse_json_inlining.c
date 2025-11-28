@@ -96,10 +96,8 @@ static cJSON_bool parse_number(cJSON *const item, parse_buffer *const input_buff
     for (i = 0; (i < (sizeof(number_c_string) - 1)) && can_access_at_index(input_buffer, i); i++) {
         c = buffer_at_offset(input_buffer)[i];
 
-        if ((c >= '0' && c <= '9') || c == '+' || c == '-' || c == 'e' || c == 'E') {
+        if ((c >= '0' && c <= '9') || c == '+' || c == '-' || c == 'e' || c == 'E' || c == '.') {
             number_c_string[i] = c;
-        } else if (c == '.') {
-            number_c_string[i] = '.';
         } else {
             break;
         }

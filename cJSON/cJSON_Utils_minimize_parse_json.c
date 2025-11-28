@@ -95,10 +95,8 @@ static cJSON_bool parse_number(cJSON *const item, parse_buffer *const input_buff
     for (i = 0; (i < (sizeof(number_c_string) - 1)) && can_access_at_index(input_buffer, i); i++) {
         c = buffer_at_offset(input_buffer)[i];
 
-        if ((c >= '0' && c <= '9') || c == '+' || c == '-' || c == 'e' || c == 'E') {
+        if ((c >= '0' && c <= '9') || c == '+' || c == '-' || c == 'e' || c == 'E' || c == '.') {
             number_c_string[i] = c;
-        } else if (c == '.') {
-            number_c_string[i] = '.';
         } else {
             break;
         }
@@ -135,9 +133,14 @@ static cJSON_bool parse_string(cJSON *const item, parse_buffer *const input_buff
     unsigned char *output = NULL;
     unsigned char sequence_length;
     cJSON_bool isSuccess = true;
-    /* calculate approximate size of the output (overestimate) */
     size_t allocation_length = 0;
     size_t skipped_bytes = 0;
+
+    if (!can_access_at_index(input_buffer, 0) || buffer_at_offset(input_buffer)[0] != '\"') {
+        return false;
+    }
+
+    /* calculate approximate size of the output (overestimate) */
     while (((size_t) (input_end - input_buffer->content) < input_buffer->length) && (*input_end != '\"')) {
         /* is escape sequence */
         if (input_end[0] == '\\') {
