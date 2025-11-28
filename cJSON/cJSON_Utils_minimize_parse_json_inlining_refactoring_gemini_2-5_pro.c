@@ -410,11 +410,14 @@ static int compare_strings(const unsigned char *string1, const unsigned char *st
         return strcmp((const char *) string1, (const char *) string2);
     }
 
-    for (; tolower(*string1) == tolower(*string2); string1++, string2++) {
+    while (tolower(*string1) == tolower(*string2)) {
         if (*string1 == '\0') {
-            return 0;
+            break;
         }
+        string1++;
+        string2++;
     }
+
     return tolower(*string1) - tolower(*string2);
 }
 
