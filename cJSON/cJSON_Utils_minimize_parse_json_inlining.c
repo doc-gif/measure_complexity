@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <limits.h>
 
+#include "cJSON.h"
 #include "cJSON_Utils.h"
 
 /* define our own boolean type */
@@ -233,27 +234,6 @@ static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffe
 
 static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buffer);
 
-/* Utility to jump whitespace and cr/lf */
-static parse_buffer *buffer_skip_whitespace(parse_buffer *const buffer) {
-    if ((buffer == NULL) || (buffer->content == NULL)) {
-        return NULL;
-    }
-
-    if (!can_access_at_index(buffer, 0)) {
-        return buffer;
-    }
-
-    while (can_access_at_index(buffer, 0) && (buffer_at_offset(buffer)[0] <= 32)) {
-        buffer->offset++;
-    }
-
-    if (buffer->offset == buffer->length) {
-        buffer->offset--;
-    }
-
-    return buffer;
-}
-
 /* skip the UTF-8 BOM (byte order mark) if it is at the beginning of a buffer */
 static parse_buffer *skip_utf8_bom(parse_buffer *const buffer) {
     if ((buffer == NULL) || (buffer->content == NULL) || (buffer->offset != 0)) {
@@ -270,6 +250,8 @@ static parse_buffer *skip_utf8_bom(parse_buffer *const buffer) {
 /* Parse an object - create a new root, and populate. */
 CJSON_PUBLIC(cJSON *) json_parse(const char *value, size_t buffer_length) {
     parse_buffer buffer = {0, 0, 0, 0};
+    parse_buffer *buffer_skip_utf8_bom;
+    parse_buffer *buffer_skip_whitespace;
     cJSON *item = NULL;
 
     if (value == NULL || 0 == buffer_length) {
@@ -285,7 +267,25 @@ CJSON_PUBLIC(cJSON *) json_parse(const char *value, size_t buffer_length) {
         return NULL;
     }
 
-    if (!parse_value(item, buffer_skip_whitespace(skip_utf8_bom(&buffer)))) {
+    buffer_skip_utf8_bom = skip_utf8_bom(&buffer);
+
+    if (buffer_skip_utf8_bom == NULL || buffer_skip_utf8_bom->content == NULL) {
+        buffer_skip_whitespace = NULL;
+    } else {
+        if (can_access_at_index(buffer_skip_utf8_bom, 0)) {
+            while (can_access_at_index(buffer_skip_utf8_bom, 0) && (buffer_at_offset(buffer_skip_utf8_bom)[0] <= 32)) {
+                buffer_skip_utf8_bom->offset++;
+            }
+
+            if (buffer_skip_utf8_bom->offset == buffer_skip_utf8_bom->length) {
+                buffer_skip_utf8_bom->offset--;
+            }
+        }
+
+        buffer_skip_whitespace = buffer_skip_utf8_bom;
+    }
+
+    if (!parse_value(item, buffer_skip_whitespace)) {
         cJSON_Delete(item);
         return NULL;
     }
@@ -346,7 +346,16 @@ static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffe
 
     input_buffer->depth++;
     input_buffer->offset++;
-    buffer_skip_whitespace(input_buffer);
+
+    if (can_access_at_index(input_buffer, 0)) {
+        while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+            input_buffer->offset++;
+        }
+
+        if (input_buffer->offset == input_buffer->length) {
+            input_buffer->offset--;
+        }
+    }
 
     /* step back to character in front of the first element */
     input_buffer->offset--;
@@ -372,9 +381,27 @@ static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffe
 
         /* parse next value */
         input_buffer->offset++;
-        buffer_skip_whitespace(input_buffer);
+        if (can_access_at_index(input_buffer, 0)) {
+            while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+                input_buffer->offset++;
+            }
+
+            if (input_buffer->offset == input_buffer->length) {
+                input_buffer->offset--;
+            }
+        }
+
         parse_value(current_item, input_buffer);
-        buffer_skip_whitespace(input_buffer);
+
+        if (can_access_at_index(input_buffer, 0)) {
+            while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+                input_buffer->offset++;
+            }
+
+            if (input_buffer->offset == input_buffer->length) {
+                input_buffer->offset--;
+            }
+        }
     } while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == ','));
 
     if (isSuccess) {
@@ -401,7 +428,15 @@ static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buff
 
     input_buffer->depth++;
     input_buffer->offset++;
-    buffer_skip_whitespace(input_buffer);
+    if (can_access_at_index(input_buffer, 0)) {
+        while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+            input_buffer->offset++;
+        }
+
+        if (input_buffer->offset == input_buffer->length) {
+            input_buffer->offset--;
+        }
+    }
 
     /* step back to character in front of the first element */
     input_buffer->offset--;
@@ -432,12 +467,31 @@ static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buff
 
         /* parse the name of the child */
         input_buffer->offset++;
-        buffer_skip_whitespace(input_buffer);
+
+        if (can_access_at_index(input_buffer, 0)) {
+            while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+                input_buffer->offset++;
+            }
+
+            if (input_buffer->offset == input_buffer->length) {
+                input_buffer->offset--;
+            }
+        }
+
         if (!parse_string(current_item, input_buffer)) {
             isSuccess = false;
             break;
         }
-        buffer_skip_whitespace(input_buffer);
+
+        if (can_access_at_index(input_buffer, 0)) {
+            while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+                input_buffer->offset++;
+            }
+
+            if (input_buffer->offset == input_buffer->length) {
+                input_buffer->offset--;
+            }
+        }
 
         /* swap valuestring and string, because we parsed the name */
         current_item->string = current_item->valuestring;
@@ -450,12 +504,31 @@ static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buff
 
         /* parse the value */
         input_buffer->offset++;
-        buffer_skip_whitespace(input_buffer);
+
+        if (can_access_at_index(input_buffer, 0)) {
+            while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+                input_buffer->offset++;
+            }
+
+            if (input_buffer->offset == input_buffer->length) {
+                input_buffer->offset--;
+            }
+        }
+
         if (!parse_value(current_item, input_buffer)) {
             isSuccess = false;
             break;
         }
-        buffer_skip_whitespace(input_buffer);
+
+        if (can_access_at_index(input_buffer, 0)) {
+            while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+                input_buffer->offset++;
+            }
+
+            if (input_buffer->offset == input_buffer->length) {
+                input_buffer->offset--;
+            }
+        }
     } while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == ','));
 
     if (isSuccess) {
@@ -558,13 +631,38 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive) {
     cJSON *current_item = list;
     cJSON *result = list;
     cJSON *result_tail = NULL;
+    int compare_strings;
+    const unsigned char *string1;
+    const unsigned char *string2;
 
     if ((list == NULL) || (list->next == NULL)) {
         /* One entry is sorted already. */
         return result;
     }
 
-    while ((current_item != NULL) && (current_item->next != NULL) && (compare_strings((unsigned char *) current_item->string,(unsigned char *) current_item->next->string,case_sensitive) < 0)) {
+    string1 = (unsigned char *) current_item->string;
+    string2 = (unsigned char *) current_item->next->string;
+
+    if ((string1 == NULL) || (string2 == NULL)) {
+        compare_strings = 1;
+    } else if (string1 == string2) {
+        compare_strings = 0;
+    } else {
+        if (case_sensitive) {
+            compare_strings = strcmp((const char *) string1, (const char *) string2);
+        } else {
+            while (tolower(*string1) == tolower(*string2)) {
+                if (*string1 == '\0') {
+                    break;
+                }
+                string1++;
+                string2++;
+            }
+            compare_strings = tolower(*string1) - tolower(*string2);
+        }
+    }
+
+    while ((current_item != NULL) && (current_item->next != NULL) && (compare_strings < 0)) {
         /* Test for list sorted. */
         current_item = current_item->next;
     }
@@ -598,7 +696,29 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive) {
     /* Merge the sub-lists */
     while ((first != NULL) && (second != NULL)) {
         smaller = NULL;
-        if (compare_strings((unsigned char *) first->string, (unsigned char *) second->string, case_sensitive) < 0) {
+        string1 = (unsigned char *) first->string;
+        string2 = (unsigned char *) second->string;
+
+        if ((string1 == NULL) || (string2 == NULL)) {
+            compare_strings = 1;
+        } else if (string1 == string2) {
+            compare_strings = 0;
+        } else {
+            if (case_sensitive) {
+                compare_strings = strcmp((const char *) string1, (const char *) string2);
+            } else {
+                while (tolower(*string1) == tolower(*string2)) {
+                    if (*string1 == '\0') {
+                        break;
+                    }
+                    string1++;
+                    string2++;
+                }
+                compare_strings = tolower(*string1) - tolower(*string2);
+            }
+        }
+
+        if (compare_strings < 0) {
             smaller = first;
         } else {
             smaller = second;
