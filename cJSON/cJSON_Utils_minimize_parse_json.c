@@ -257,19 +257,6 @@ static parse_buffer *buffer_skip_whitespace(parse_buffer *const buffer) {
     return buffer;
 }
 
-/* skip the UTF-8 BOM (byte order mark) if it is at the beginning of a buffer */
-static parse_buffer *skip_utf8_bom(parse_buffer *const buffer) {
-    if ((buffer == NULL) || (buffer->content == NULL) || (buffer->offset != 0)) {
-        return NULL;
-    }
-
-    if (can_access_at_index(buffer, 4) && (strncmp((const char *) buffer_at_offset(buffer), "\xEF\xBB\xBF", 3) == 0)) {
-        buffer->offset += 3;
-    }
-
-    return buffer;
-}
-
 /* Parse an object - create a new root, and populate. */
 CJSON_PUBLIC(cJSON *) json_parse(const char *value, size_t buffer_length) {
     parse_buffer buffer = {0, 0, 0, 0};
@@ -288,7 +275,7 @@ CJSON_PUBLIC(cJSON *) json_parse(const char *value, size_t buffer_length) {
         return NULL;
     }
 
-    if (!parse_value(item, buffer_skip_whitespace(skip_utf8_bom(&buffer)))) {
+    if (!parse_value(item, buffer_skip_whitespace(&buffer))) {
         cJSON_Delete(item);
         return NULL;
     }
@@ -371,10 +358,18 @@ static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffe
             current_item = new_item;
         }
 
+        if (!can_access_at_index(input_buffer, 1)) {
+            isSuccess = false;
+            break;
+        }
+
         /* parse next value */
         input_buffer->offset++;
         buffer_skip_whitespace(input_buffer);
-        parse_value(current_item, input_buffer);
+        if (!parse_value(current_item, input_buffer)) {
+            isSuccess = false;
+            break;
+        }
         buffer_skip_whitespace(input_buffer);
     } while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == ','));
 
@@ -644,31 +639,27 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive) {
 }
 
 int main() {
-    cJSON *example1;
+    cJSON *json1, *json2, *json3, *json4, *json5, *json6;
 
-    example1 = load_json_file("example1.json");
+    json1 = load_json_file("example1.json");
 
-    cJSON *key1 = example1->child;
-    cJSON *key2 = key1->next;
-    cJSON *key3 = key2->next;
-    cJSON *key4 = key3->child;
-    cJSON *key5 = key3->next;
-    cJSON *key5Item1 = key5->child;
-    cJSON *key5Item2 = key5Item1->next;
+    json2 = load_json_file("example2.json");
 
-    printf("{\n");
-    printf("  \"%s\": %f,\n", key1->string, key1->valuedouble);
-    printf("  \"%s\": \"%s\",\n", key2->string, key2->valuestring);
-    printf("  \"%s\": {\n", key3->string);
-    printf("    \"%s\": %d\n", key4->string, key4->valueint);
-    printf("  },\n");
-    printf("  \"%s\": [\n", key5->string);
-    printf("    %d,\n", key5Item1->valueint);
-    printf("    \"%s\",\n", key5Item2->valuestring);
-    printf("  ]\n");
-    printf("}\n");
+    json3 = load_json_file("example3.json");
 
-    cJSON_Delete(example1);
+    json4 = load_json_file("example4.json");
+
+    json5 = load_json_file("example5.json");
+
+    json6 = load_json_file("example6.json");
+    json6->child = sort_list(json6->child, cJSON_False);
+
+    cJSON_Delete(json1);
+    cJSON_Delete(json2);
+    cJSON_Delete(json3);
+    cJSON_Delete(json4);
+    cJSON_Delete(json5);
+    cJSON_Delete(json6);
 
     return 0;
 }
