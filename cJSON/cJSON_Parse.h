@@ -136,8 +136,6 @@ typedef int cJSON_bool;
 #define CJSON_CIRCULAR_LIMIT 10000
 #endif
 
-CJSON_PUBLIC(void) cJSON_Delete(cJSON *item);
-
 #ifdef __cplusplus
 }
 #endif
