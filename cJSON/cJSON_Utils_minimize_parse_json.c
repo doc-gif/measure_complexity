@@ -43,7 +43,6 @@ typedef struct {
     const unsigned char *content;
     size_t length;
     size_t offset;
-    size_t depth;
 } parse_buffer;
 
 static cJSON *create_new_item() {
@@ -229,13 +228,6 @@ static cJSON_bool parse_string(cJSON *const item, parse_buffer *const input_buff
     }
 }
 
-/* Predeclare these prototypes. */
-static cJSON_bool parse_value(cJSON *const item, parse_buffer *const input_buffer);
-
-static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffer);
-
-static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buffer);
-
 /* Utility to jump whitespace and cr/lf */
 static parse_buffer *buffer_skip_whitespace(parse_buffer *const buffer) {
     if ((buffer == NULL) || (buffer->content == NULL)) {
@@ -246,7 +238,7 @@ static parse_buffer *buffer_skip_whitespace(parse_buffer *const buffer) {
         return buffer;
     }
 
-    while (can_access_at_index(buffer, 0) && (buffer_at_offset(buffer)[0] <= 32)) {
+    while (can_access_at_index(buffer, 0) && isspace(buffer_at_offset(buffer)[0])) {
         buffer->offset++;
     }
 
@@ -257,30 +249,152 @@ static parse_buffer *buffer_skip_whitespace(parse_buffer *const buffer) {
     return buffer;
 }
 
-/* Parse an object - create a new root, and populate. */
-CJSON_PUBLIC(cJSON *) json_parse(const char *value, size_t buffer_length) {
-    parse_buffer buffer = {0, 0, 0, 0};
-    cJSON *item = NULL;
+/* Predeclare these prototypes. */
+static cJSON_bool parse_value(cJSON *const item, parse_buffer *const input_buffer);
 
-    if (value == NULL || 0 == buffer_length) {
-        return NULL;
+/* Build an array from input text. */
+static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffer) {
+    cJSON *head = NULL; /* head of the linked list */
+    cJSON *current_item = NULL;
+    cJSON *new_item = NULL;
+    cJSON_bool isSuccess = true;
+
+    input_buffer->offset++;
+    buffer_skip_whitespace(input_buffer);
+
+    /* step back to character in front of the first element */
+    input_buffer->offset--;
+    /* loop through the comma separated array elements */
+    do {
+        /* allocate next item */
+        new_item = create_new_item();
+        if (new_item == NULL) {
+            isSuccess = false;
+            break;
+        }
+
+        /* attach next item to list */
+        if (head == NULL) {
+            /* start the linked list */
+            head = new_item;
+            current_item = new_item;
+        } else {
+            /* add to the end and advance */
+            current_item->next = new_item;
+            new_item->prev = current_item;
+            current_item = new_item;
+        }
+
+        if (!can_access_at_index(input_buffer, 1)) {
+            isSuccess = false;
+            break;
+        }
+
+        /* parse next value */
+        input_buffer->offset++;
+        buffer_skip_whitespace(input_buffer);
+        if (!parse_value(current_item, input_buffer)) {
+            isSuccess = false;
+            break;
+        }
+        buffer_skip_whitespace(input_buffer);
+    } while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == ','));
+
+    if (isSuccess) {
+        head->prev = current_item;
+        item->type = cJSON_Array;
+        item->child = head;
+        input_buffer->offset++;
+
+        return true;
+    } else {
+        cJSON_Delete(head);
+
+        return false;
     }
+}
 
-    buffer.content = (const unsigned char *) value;
-    buffer.length = buffer_length;
-    buffer.offset = 0;
+/* Build an object from the text. */
+static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buffer) {
+    cJSON *head = NULL; /* linked list head */
+    cJSON *current_item = NULL;
+    cJSON *new_item = NULL;
+    cJSON_bool isSuccess = true;
 
-    item = create_new_item();
-    if (item == NULL) {
-        return NULL;
+    input_buffer->offset++;
+    buffer_skip_whitespace(input_buffer);
+
+    /* step back to character in front of the first element */
+    input_buffer->offset--;
+    /* loop through the comma separated array elements */
+    do {
+        /* allocate next item */
+        new_item = create_new_item();
+        if (new_item == NULL) {
+            isSuccess = false;
+            break;
+        }
+
+        /* attach next item to list */
+        if (head == NULL) {
+            /* start the linked list */
+            head = new_item;
+            current_item = new_item;
+        } else {
+            /* add to the end and advance */
+            current_item->next = new_item;
+            new_item->prev = current_item;
+            current_item = new_item;
+        }
+
+        if (!can_access_at_index(input_buffer, 1)) {
+            isSuccess = false;
+            break;
+        }
+
+        /* parse the name of the child */
+        input_buffer->offset++;
+        buffer_skip_whitespace(input_buffer);
+        if (!parse_string(current_item, input_buffer)) {
+            isSuccess = false;
+            break;
+        }
+        buffer_skip_whitespace(input_buffer);
+
+        /* swap valuestring and string, because we parsed the name */
+        current_item->string = current_item->valuestring;
+        current_item->valuestring = NULL;
+
+        if (!can_access_at_index(input_buffer, 0) || (buffer_at_offset(input_buffer)[0] != ':')) {
+            isSuccess = false;
+            break;
+        }
+
+        /* parse the value */
+        input_buffer->offset++;
+        buffer_skip_whitespace(input_buffer);
+        if (!parse_value(current_item, input_buffer)) {
+            isSuccess = false;
+            break;
+        }
+        buffer_skip_whitespace(input_buffer);
+    } while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == ','));
+
+    if (isSuccess) {
+        if (head != NULL) {
+            head->prev = current_item;
+        }
+
+        item->type = cJSON_Object;
+        item->child = head;
+
+        input_buffer->offset++;
+        return true;
+    } else {
+        cJSON_Delete(head);
+
+        return false;
     }
-
-    if (!parse_value(item, buffer_skip_whitespace(&buffer))) {
-        cJSON_Delete(item);
-        return NULL;
-    }
-
-    return item;
 }
 
 /* Parser core - when encountering text, process appropriately. */
@@ -325,152 +439,30 @@ static cJSON_bool parse_value(cJSON *const item, parse_buffer *const input_buffe
     return false;
 }
 
-/* Build an array from input text. */
-static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffer) {
-    cJSON *head = NULL; /* head of the linked list */
-    cJSON *current_item = NULL;
-    cJSON *new_item = NULL;
-    cJSON_bool isSuccess = true;
+/* Parse an object - create a new root, and populate. */
+cJSON * json_parse(const char *value, size_t buffer_length) {
+    parse_buffer buffer = {0, 0, 0};
+    cJSON *item = NULL;
 
-    input_buffer->depth++;
-    input_buffer->offset++;
-    buffer_skip_whitespace(input_buffer);
-
-    /* step back to character in front of the first element */
-    input_buffer->offset--;
-    /* loop through the comma separated array elements */
-    do {
-        /* allocate next item */
-        new_item = create_new_item();
-        if (new_item == NULL) {
-            isSuccess = false;
-            break;
-        }
-
-        /* attach next item to list */
-        if (head == NULL) {
-            /* start the linked list */
-            current_item = head = new_item;
-        } else {
-            /* add to the end and advance */
-            current_item->next = new_item;
-            new_item->prev = current_item;
-            current_item = new_item;
-        }
-
-        if (!can_access_at_index(input_buffer, 1)) {
-            isSuccess = false;
-            break;
-        }
-
-        /* parse next value */
-        input_buffer->offset++;
-        buffer_skip_whitespace(input_buffer);
-        if (!parse_value(current_item, input_buffer)) {
-            isSuccess = false;
-            break;
-        }
-        buffer_skip_whitespace(input_buffer);
-    } while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == ','));
-
-    if (isSuccess) {
-        input_buffer->depth--;
-        head->prev = current_item;
-        item->type = cJSON_Array;
-        item->child = head;
-        input_buffer->offset++;
-
-        return true;
-    } else {
-        cJSON_Delete(head);
-
-        return false;
+    if (value == NULL || 0 == buffer_length) {
+        return NULL;
     }
-}
 
-/* Build an object from the text. */
-static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buffer) {
-    cJSON *head = NULL; /* linked list head */
-    cJSON *current_item = NULL;
-    cJSON *new_item = NULL;
-    cJSON_bool isSuccess = true;
+    buffer.content = (const unsigned char *) value;
+    buffer.length = buffer_length;
+    buffer.offset = 0;
 
-    input_buffer->depth++;
-    input_buffer->offset++;
-    buffer_skip_whitespace(input_buffer);
-
-    /* step back to character in front of the first element */
-    input_buffer->offset--;
-    /* loop through the comma separated array elements */
-    do {
-        /* allocate next item */
-        new_item = create_new_item();
-        if (new_item == NULL) {
-            isSuccess = false;
-            break;
-        }
-
-        /* attach next item to list */
-        if (head == NULL) {
-            /* start the linked list */
-            current_item = head = new_item;
-        } else {
-            /* add to the end and advance */
-            current_item->next = new_item;
-            new_item->prev = current_item;
-            current_item = new_item;
-        }
-
-        if (!can_access_at_index(input_buffer, 1)) {
-            isSuccess = false;
-            break;
-        }
-
-        /* parse the name of the child */
-        input_buffer->offset++;
-        buffer_skip_whitespace(input_buffer);
-        if (!parse_string(current_item, input_buffer)) {
-            isSuccess = false;
-            break;
-        }
-        buffer_skip_whitespace(input_buffer);
-
-        /* swap valuestring and string, because we parsed the name */
-        current_item->string = current_item->valuestring;
-        current_item->valuestring = NULL;
-
-        if (!can_access_at_index(input_buffer, 0) || (buffer_at_offset(input_buffer)[0] != ':')) {
-            isSuccess = false;
-            break;
-        }
-
-        /* parse the value */
-        input_buffer->offset++;
-        buffer_skip_whitespace(input_buffer);
-        if (!parse_value(current_item, input_buffer)) {
-            isSuccess = false;
-            break;
-        }
-        buffer_skip_whitespace(input_buffer);
-    } while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == ','));
-
-    if (isSuccess) {
-        input_buffer->depth--;
-
-        if (head != NULL) {
-            head->prev = current_item;
-        }
-
-        item->type = cJSON_Object;
-        item->child = head;
-
-        input_buffer->offset++;
-        return true;
-    } else {
-        cJSON_Delete(head);
-
-        return false;
+    item = create_new_item();
+    if (item == NULL) {
+        return NULL;
     }
+
+    if (!parse_value(item, buffer_skip_whitespace(&buffer))) {
+        cJSON_Delete(item);
+        return NULL;
+    }
+
+    return item;
 }
 
 cJSON *load_json_file(const char *filepath) {
@@ -639,7 +631,7 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive) {
 }
 
 int main() {
-    cJSON *json1, *json2, *json3, *json4, *json5, *json6;
+    cJSON *json1, *json2, *json3, *json4, *json5, *json6, *json7, *json8;
 
     json1 = load_json_file("example1.json");
 
@@ -654,12 +646,19 @@ int main() {
     json6 = load_json_file("example6.json");
     json6->child = sort_list(json6->child, cJSON_False);
 
+    json7 = load_json_file("example7.json");
+    printf("%s", json7->valuestring);
+
+    json8 = load_json_file("example8.json");
+
     cJSON_Delete(json1);
     cJSON_Delete(json2);
     cJSON_Delete(json3);
     cJSON_Delete(json4);
     cJSON_Delete(json5);
     cJSON_Delete(json6);
+    cJSON_Delete(json7);
+    cJSON_Delete(json8);
 
     return 0;
 }
