@@ -392,7 +392,7 @@ dictionary *iniparser_load(const char *ininame) {
 }
 
 int main() {
-    dictionary *ini1, *ini2;
+    dictionary *ini1, *ini2, *ini3, *ini4, *ini5;
     char *value1, *value2;
 
     iniparser_set_error_callback(NULL);
@@ -407,10 +407,22 @@ int main() {
     ini2 = iniparser_load("example4.ini");
     value2 = iniparser_getstring(ini2, "section1:key1", "NOT_FOUND");
 
+    ini3 = iniparser_load("example5.ini");
+
+    ini4 = iniparser_load("example6.ini");
+
+    ini5 = iniparser_load("example7.ini");
+
     iniparser_freedict(ini1);
     ini1 = NULL;
     iniparser_freedict(ini2);
     ini2 = NULL;
+    iniparser_freedict(ini3);
+    ini3 = NULL;
+    iniparser_freedict(ini4);
+    ini4 = NULL;
+    iniparser_freedict(ini5);
+    ini5 = NULL;
 
     return 0;
 }
