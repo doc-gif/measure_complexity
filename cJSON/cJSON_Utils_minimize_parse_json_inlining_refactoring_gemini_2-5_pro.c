@@ -191,76 +191,6 @@ static cJSON_bool parse_string(cJSON *const item, parse_buffer *const input_buff
 
 static cJSON_bool parse_value(cJSON *const item, parse_buffer *const input_buffer);
 
-static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffer);
-
-static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buffer);
-
-static parse_buffer *skip_utf8_bom(parse_buffer *const buffer) {
-    if (buffer && buffer->content && buffer->offset == 0 && can_access_at_index(buffer, 3) && (strncmp((const char *) buffer_at_offset(buffer), "\xEF\xBB\xBF", 3) == 0)) {
-        buffer->offset += 3;
-    }
-    return buffer;
-}
-
-CJSON_PUBLIC(cJSON *) json_parse(const char *value, size_t buffer_length) {
-    parse_buffer buffer = {0, 0, 0, 0};
-    cJSON *item = NULL;
-
-    if (value == NULL || buffer_length == 0) {
-        return NULL;
-    }
-
-    buffer.content = (const unsigned char *) value;
-    buffer.length = buffer_length;
-
-    item = create_new_item();
-    if (item == NULL) {
-        return NULL;
-    }
-
-    parse_buffer *buffer_ptr = skip_utf8_bom(&buffer);
-    skip_whitespace(buffer_ptr);
-
-    if (!parse_value(item, buffer_ptr)) {
-        cJSON_Delete(item);
-        return NULL;
-    }
-
-    return item;
-}
-
-static cJSON_bool parse_value(cJSON *const item, parse_buffer *const input_buffer) {
-    if (can_read(input_buffer, 4) && (strncmp((const char *) buffer_at_offset(input_buffer), "null", 4) == 0)) {
-        item->type = cJSON_NULL;
-        input_buffer->offset += 4;
-        return true;
-    }
-    if (can_read(input_buffer, 5) && (strncmp((const char *) buffer_at_offset(input_buffer), "false", 5) == 0)) {
-        item->type = cJSON_False;
-        input_buffer->offset += 5;
-        return true;
-    }
-    if (can_read(input_buffer, 4) && (strncmp((const char *) buffer_at_offset(input_buffer), "true", 4) == 0)) {
-        item->type = cJSON_True;
-        item->valueint = 1;
-        input_buffer->offset += 4;
-        return true;
-    }
-    if (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == '\"')) {
-        return parse_string(item, input_buffer);
-    }
-    if (can_access_at_index(input_buffer, 0) && ((buffer_at_offset(input_buffer)[0] == '-') || ((buffer_at_offset(input_buffer)[0] >= '0') && (buffer_at_offset(input_buffer)[0] <= '9')))) {
-        return parse_number(item, input_buffer);
-    }
-    if (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == '[')) {
-        return parse_array(item, input_buffer);
-    }
-    if (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == '{')) {
-        return parse_object(item, input_buffer);
-    }
-    return false;
-}
-
 static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffer) {
     cJSON *head = NULL;
     cJSON *current_item = NULL;
@@ -349,6 +279,64 @@ static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buff
         cJSON_Delete(head);
     }
     return isSuccess;
+}
+
+static cJSON_bool parse_value(cJSON *const item, parse_buffer *const input_buffer) {
+    if (can_read(input_buffer, 4) && (strncmp((const char *) buffer_at_offset(input_buffer), "null", 4) == 0)) {
+        item->type = cJSON_NULL;
+        input_buffer->offset += 4;
+        return true;
+    }
+    if (can_read(input_buffer, 5) && (strncmp((const char *) buffer_at_offset(input_buffer), "false", 5) == 0)) {
+        item->type = cJSON_False;
+        input_buffer->offset += 5;
+        return true;
+    }
+    if (can_read(input_buffer, 4) && (strncmp((const char *) buffer_at_offset(input_buffer), "true", 4) == 0)) {
+        item->type = cJSON_True;
+        item->valueint = 1;
+        input_buffer->offset += 4;
+        return true;
+    }
+    if (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == '\"')) {
+        return parse_string(item, input_buffer);
+    }
+    if (can_access_at_index(input_buffer, 0) && ((buffer_at_offset(input_buffer)[0] == '-') || ((buffer_at_offset(input_buffer)[0] >= '0') && (buffer_at_offset(input_buffer)[0] <= '9')))) {
+        return parse_number(item, input_buffer);
+    }
+    if (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == '[')) {
+        return parse_array(item, input_buffer);
+    }
+    if (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == '{')) {
+        return parse_object(item, input_buffer);
+    }
+    return false;
+}
+
+cJSON * json_parse(const char *value, size_t buffer_length) {
+    parse_buffer buffer = {0, 0, 0, 0};
+    cJSON *item = NULL;
+
+    if (value == NULL || buffer_length == 0) {
+        return NULL;
+    }
+
+    buffer.content = (const unsigned char *) value;
+    buffer.length = buffer_length;
+
+    item = create_new_item();
+    if (item == NULL) {
+        return NULL;
+    }
+
+    skip_whitespace(&buffer);
+
+    if (!parse_value(item, &buffer)) {
+        cJSON_Delete(item);
+        return NULL;
+    }
+
+    return item;
 }
 
 cJSON *load_json_file(const char *filepath) {
@@ -484,32 +472,34 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive) {
 }
 
 int main() {
-    cJSON *example1 = load_json_file("example1.json");
-    if (example1 == NULL) {
-        return 1;
-    }
+    cJSON *json1, *json2, *json3, *json4, *json5, *json6, *json7, *json8;
 
-    cJSON *key1 = example1->child;
-    cJSON *key2 = key1->next;
-    cJSON *key3 = key2->next;
-    cJSON *key4 = key3->child;
-    cJSON *key5 = key3->next;
-    cJSON *key5Item1 = key5->child;
-    cJSON *key5Item2 = key5Item1->next;
+    json1 = load_json_file("example1.json");
 
-    printf("{\n");
-    printf("  \"%s\": %f,\n", key1->string, key1->valuedouble);
-    printf("  \"%s\": \"%s\",\n", key2->string, key2->valuestring);
-    printf("  \"%s\": {\n", key3->string);
-    printf("    \"%s\": %d\n", key4->string, key4->valueint);
-    printf("  },\n");
-    printf("  \"%s\": [\n", key5->string);
-    printf("    %d,\n", key5Item1->valueint);
-    printf("    \"%s\",\n", key5Item2->valuestring);
-    printf("  ]\n");
-    printf("}\n");
+    json2 = load_json_file("example2.json");
 
-    cJSON_Delete(example1);
+    json3 = load_json_file("example3.json");
+
+    json4 = load_json_file("example4.json");
+
+    json5 = load_json_file("example5.json");
+
+    json6 = load_json_file("example6.json");
+    json6->child = sort_list(json6->child, cJSON_False);
+
+    json7 = load_json_file("example7.json");
+    printf("%s", json7->valuestring);
+
+    json8 = load_json_file("example8.json");
+
+    cJSON_Delete(json1);
+    cJSON_Delete(json2);
+    cJSON_Delete(json3);
+    cJSON_Delete(json4);
+    cJSON_Delete(json5);
+    cJSON_Delete(json6);
+    cJSON_Delete(json7);
+    cJSON_Delete(json8);
 
     return 0;
 }
