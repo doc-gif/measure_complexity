@@ -28,7 +28,7 @@ extern "C"
 {
 #endif
 
-#include "cJSON_Parse.h"
+#include "cJSON.h"
 
 /* Implement RFC6901 (https://tools.ietf.org/html/rfc6901) JSON Pointer spec. */
 CJSON_PUBLIC(cJSON *) cJSONUtils_GetPointer(cJSON * const object, const char *pointer);
