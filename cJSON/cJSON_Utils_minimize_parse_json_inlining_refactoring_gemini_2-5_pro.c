@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <limits.h>
 
-#include "cJSON.h"
+#include "cJSON_Parse.h"
 #include "cJSON_Utils.h"
 
 #ifdef true
@@ -70,7 +70,7 @@ static void skip_whitespace(parse_buffer *const buffer) {
     if (buffer == NULL || !can_access_at_index(buffer, 0)) {
         return;
     }
-    while (can_access_at_index(buffer, 0) && (buffer_at_offset(buffer)[0] <= 32)) {
+    while (can_access_at_index(buffer, 0) && isspace(buffer_at_offset(buffer)[0])) {
         buffer->offset++;
     }
     if (buffer->offset == buffer->length) {

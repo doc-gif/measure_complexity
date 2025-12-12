@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <limits.h>
 
-#include "cJSON.h"
+#include "cJSON_Parse.h"
 #include "cJSON_Utils.h"
 
 /* define our own boolean type */
@@ -239,7 +239,7 @@ static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffe
     input_buffer->offset++;
 
     if (can_access_at_index(input_buffer, 0)) {
-        while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+        while (can_access_at_index(input_buffer, 0) && isspace(buffer_at_offset(input_buffer)[0])) {
             input_buffer->offset++;
         }
 
@@ -273,7 +273,7 @@ static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffe
         /* parse next value */
         input_buffer->offset++;
         if (can_access_at_index(input_buffer, 0)) {
-            while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+            while (can_access_at_index(input_buffer, 0) && isspace(buffer_at_offset(input_buffer)[0])) {
                 input_buffer->offset++;
             }
 
@@ -285,7 +285,7 @@ static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffe
         parse_value(current_item, input_buffer);
 
         if (can_access_at_index(input_buffer, 0)) {
-            while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+            while (can_access_at_index(input_buffer, 0) && isspace(buffer_at_offset(input_buffer)[0])) {
                 input_buffer->offset++;
             }
 
@@ -320,7 +320,7 @@ static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buff
     input_buffer->depth++;
     input_buffer->offset++;
     if (can_access_at_index(input_buffer, 0)) {
-        while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+        while (can_access_at_index(input_buffer, 0) && isspace(buffer_at_offset(input_buffer)[0])) {
             input_buffer->offset++;
         }
 
@@ -360,7 +360,7 @@ static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buff
         input_buffer->offset++;
 
         if (can_access_at_index(input_buffer, 0)) {
-            while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+            while (can_access_at_index(input_buffer, 0) && isspace(buffer_at_offset(input_buffer)[0])) {
                 input_buffer->offset++;
             }
 
@@ -375,7 +375,7 @@ static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buff
         }
 
         if (can_access_at_index(input_buffer, 0)) {
-            while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+            while (can_access_at_index(input_buffer, 0) && isspace(buffer_at_offset(input_buffer)[0])) {
                 input_buffer->offset++;
             }
 
@@ -397,7 +397,7 @@ static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buff
         input_buffer->offset++;
 
         if (can_access_at_index(input_buffer, 0)) {
-            while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+            while (can_access_at_index(input_buffer, 0) && isspace(buffer_at_offset(input_buffer)[0])) {
                 input_buffer->offset++;
             }
 
@@ -412,7 +412,7 @@ static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buff
         }
 
         if (can_access_at_index(input_buffer, 0)) {
-            while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] <= 32)) {
+            while (can_access_at_index(input_buffer, 0) && isspace(buffer_at_offset(input_buffer)[0])) {
                 input_buffer->offset++;
             }
 
