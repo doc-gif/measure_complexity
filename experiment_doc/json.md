@@ -1,20 +1,115 @@
-### インクルード経路について
+# json
 
-この資料では、ヘッダーファイル間の依存関係を表現するために、以下の記法を用います。
+この資料では、外部ファイルで定義されているマクロ、型、関数を説明します。
 
-A -> B
+## マクロ
 
-ヘッダーファイルAが、ヘッダーファイルBをインクルードしていることを表現します。
+### cJSON_False
 
-このルールに基づき、各項目での冗長な説明は省略します。
+```c
+#define cJSON_False  (1 << 0)
+```
 
-### 構造体・マクロ・関数の説明
+JSON真偽値の偽を表現する値です。
 
-外部ファイルで定義されている構造体・マクロ・関数について説明します。
+**宣言・定義**
 
-```c++
-typedef struct cJSON
-{
+- 定義場所：`cJSON_Utils.h`
+
+### cJSON_True
+
+```c
+#define cJSON_True  (1 << 1)
+```
+
+JSON真偽値の真を表現する値です。
+
+**宣言・定義**
+
+- 定義場所：`cJSON_Utils.h`
+
+### cJSON_NULL
+
+```c
+#define cJSON_NULL  (1 << 2)
+```
+
+NULL値を表現する値です。
+
+**宣言・定義**
+
+- 定義場所：`cJSON_Utils.h`
+
+### cJSON_Number
+
+```c
+#define cJSON_Number  (1 << 3)
+```
+
+JSON数値を表現する値です。
+
+**宣言・定義**
+
+- 定義場所：`cJSON_Utils.h`
+
+### cJSON_String
+
+```c
+#define cJSON_String  (1 << 4)
+```
+
+JSON文字列を表現する値です。
+
+**宣言・定義**
+
+- 定義場所：`cJSON_Utils.h`
+
+### cJSON_Array
+
+```c
+#define cJSON_Array  (1 << 5)
+```
+
+JSON配列を表現する値です。
+
+**宣言・定義**
+
+- 定義場所：`cJSON_Utils.h`
+
+### cJSON_Object
+
+```c
+#define cJSON_Object  (1 << 7)
+```
+
+JSONオブジェクトを表現する値です。
+
+**宣言・定義**
+
+- 定義場所：`cJSON_Utils.h`
+
+### INT_MAX
+
+int型で表現できる値の最大値です。
+
+**宣言・定義**
+
+- 定義場所：`limits.h`
+
+### INT_MIN
+
+int型で表現できる値の最小値です。
+
+**宣言・定義**
+
+- 定義場所：`limits.h`
+
+## 型
+
+### cJSON
+
+```c
+typedef struct cJSON {
     struct cJSON *next;
     struct cJSON *prev;
     struct cJSON *child;
@@ -25,427 +120,411 @@ typedef struct cJSON
     char *string;
 } cJSON;
 ```
-JSONのバリューを表現する構造体です。
 
--   next：n階層（後述）のバリューのうち、1つ次のバリューへのポインタを格納します。
--   prev：n階層のバリューのうち、1つ前のバリューへのポインタを格納します。
--	child：n+1階層のバリューへのポインタを格納します。
--	type：バリューの種類を表現します。
--	valuestring：バリューの種類がJSON文字列のバリューを格納します。
--	valueint：バリューの種類がJSON数値（整数）のバリューを格納します。
--	valuedouble：バリューの種類がJSON数値（浮動小数点）のバリューを格納します。
--	string：バリューにキーが存在するとき、キーを格納します。
+JSONデータを表現する型です。
 
-#### 階層
+**宣言・定義**
 
-JSONデータの中で、バリューが格納されているネストの深さを表現します。
+- 定義場所：`cJSON_Utils.h`
 
-- 0階層：JSONデータ全体を表現したバリューを指します。
-- n+1階層（n>=0）：n階層のJSONオブジェクト、JSON配列が格納しているバリューを指します。
+### cJSON_bool
 
-#### 宣言・定義
--   定義場所：cJSON_Utils.h -> cJSON.h
-
----
-
-```c++
+```c
 typedef int cJSON_bool;
 ```
 
-JSON真偽値を扱うための型です。
+真偽値を表現する型です。
 
-#### 宣言・定義
--   定義場所：cJSON_Utils.h -> cJSON.h
+**宣言・定義**
 
----
+- 定義場所：`cJSON_Utils.h`
 
-```c++
-#define CJSON_PUBLIC(type) type
+### FILE
+
+ファイル入出力を制御する型です。ファイルのオープン、読み書き、クローズなどの操作に使用されます。
+
+宣言・定義
+
+- 宣言場所：`stdio.h`
+
+### size_t
+
+オブジェクトのサイズを表現するのに十分な大きさが保証した、符号なし整数型です。
+
+宣言・定義
+
+- 定義場所：`stdlib.h`
+
+## 関数
+
+### cJSON_Delete（cJSONオブジェクトのメモリ解放）
+
+```c
+void cJSON_Delete(cJSON *item);
 ```
 
-引数typeで指定された型を戻します。
+引数`item` で指定したcJSONオブジェクトのメモリを解放します。
 
-#### 宣言・定義
--   定義場所：cJSON_Utils.h -> cJSON.h
+**宣言・定義**
 
----
+- 宣言場所：`cJSON_Utils.h`
 
-```c++
-#define cJSON_False  (1 << 0) 
-#define cJSON_True   (1 << 1) 
-#define cJSON_NULL   (1 << 2) 
-#define cJSON_Number (1 << 3) 
-#define cJSON_String (1 << 4) 
-#define cJSON_Array  (1 << 5) 
-#define cJSON_Object (1 << 6) 
+### calloc（メモリ領域の確保）
+
+```c
+void *calloc(size_t num, size_t size);
 ```
 
-バリューの種類を識別するマクロです。
--	cJSON_False	    ：JSON真偽値（偽）
--	cJSON_True	    ：JSON真偽値（真）
--	cJSON_NULL	    ：null値
--	cJSON_Number	：JSON数値
--	cJSON_String	：JSON文字列
--	cJSON_Array	    ：JSON配列
--	cJSON_Object	：JSONオブジェクト
+引数`size`で指定したバイト数のメモリ領域を、引数`num`で指定した個数だけ確保し、そのメモリ領域のポインタを返します。
 
-#### 宣言・定義
--   定義場所：cJSON_Utils.h -> cJSON.h
+- 引数：
+    - `size`：確保するメモリ領域の１つ当たりのバイト数
+    - `num`：確保するメモリ領域の個数
+- 戻り値：
+    - メモリ領域の確保に成功した場合：確保したメモリ領域のポインタ
+    - メモリ領域の確保に失敗した場合：`NULL`
 
----
+**宣言・定義**
 
-```c++
-CJSON_PUBLIC(void) cJSON_Delete(cJSON *item);
+- 宣言場所：`stdlib.h`
+
+### fclose（ファイルクローズ）
+
+```c
+int fclose(FILE *stream);
 ```
 
-引数itemで指定されたcJSONオブジェクトのメモリを解放します。
-- 入力（引数）：
-    -	item：削除するcJSONオブジェクトへのポインタ
-- 出力（戻り値）：
-    -	無し
- 
-#### 宣言・定義
--   宣言場所：cJSON_Utils.h -> cJSON.h
+引数`stream`で指定したファイルをクローズします。
 
----
+- 引数：
+    - `stream`：クローズするファイルのポインタ
+- 戻り値：
+    - クローズに成功した場合：`0`
+    - クローズに失敗した場合：`EOF`
 
-```c++
-CJSON_PUBLIC(cJSON *) cJSON_CreateString(const char *string);
-```
-以下のようにメンバを設定したcJSONオブジェクトを作成します。
-```c++
-prev        = NULL;
-next        = NULL;
-child       = NULL;
-type        = cJSON_String;
-valuestring = string; // 引数stringを格納する
-valueint    = 0;
-valuedouble = 0.0;
-string      = NULL;
+**宣言・定義**
+
+- 宣言場所：`stdio.h`
+
+### feof（ファイルのEOF判定）
+
+```c
+int feof(FILE *stream);
 ```
 
-- 入力（引数）：
-    -	string：「JSON文字列」として作成する文字列
-- 出力（戻り値）：
-    - cJSONオブジェクトの作成に成功した場合：作成したcJSONオブジェクトへのポインタ
-    - cJSONオブジェクトの作成に失敗した場合：NULL
- 
-#### 宣言・定義
--   宣言場所：cJSON_Utils.h -> cJSON.h
+引数`stream`で指定したファイルが指す位置が、`EOF` であるかを判別し、その判別結果を返します。
 
----
+- 引数：
+    - `stream`：`EOF`判定をするファイルのポインタ
+- 戻り値：
+    - ファイルが指す位置が`EOF`である場合：`0` 以外の値
+    - ファイルが指す位置が`EOF`でない場合：`0`
 
-```c++
-CJSON_PUBLIC(cJSON *) cJSON_CreateObject(void);
-```
-以下のようにメンバを設定したcJSONオブジェクトを作成します。
-```c++
-prev        = NULL;
-next        = NULL;
-child       = NULL;
-type        = cJSON_Object;
-valuestring = NULL;
-valueint    = 0;
-valuedouble = 0.0;
-string      = NULL;
+**宣言・定義**
+
+- 宣言場所：`stdio.h`
+
+### ferror（ファイルのエラー判定）
+
+```c
+int ferror(FILE *stream);
 ```
 
-- 入力（引数）：
-    -	無し
-- 出力（戻り値）：
-    - 	cJSONノードの作成に成功した場合：作成したcJSONオブジェクトへのポインタ
-    - 	cJSONノードの作成に失敗した場合：NULL
- 
-#### 宣言・定義
--   宣言場所：cJSON_Utils.h -> cJSON.h
+引数`stream`で指定したファイルで、エラーが発生しているかを判別し、その判別結果を返します。
 
----
+- 引数：
+    - `stream`：エラー判定をするファイルのポインタ
+- 戻り値：
+    - エラーが発生した場合：`0` 以外の値
+    - エラーが発生していない場合：`0`
 
-```c++
-CJSON_PUBLIC(cJSON *) cJSON_CreateArray(void );
-```
-以下のようにメンバを設定したcJSONオブジェクトを作成します。
-```c++
-prev        = NULL;
-next        = NULL;
-child       = NULL;
-type        = cJSON_Array;
-valuestring = NULL;
-valueint    = 0;
-valuedouble = 0.0;
-string      = NULL;
+**宣言・定義**
+
+- 宣言場所：`stdio.h`
+
+### fopen（ファイルオープン）
+
+```c
+FILE *fopen(char *path, char *mode);
 ```
 
-- 入力（引数）：
-    - 	無し
-- 出力（戻り値）：
-    - 	cJSONノードの作成に成功した場合：作成したcJSONオブジェクトへのポインタ
-    - 	cJSONノードの作成に失敗した場合：NULL
+引数`path` で指定したファイルパスを、引数`mode` で指定したモードで、オープンします。
 
-#### 宣言・定義
--   宣言場所：cJSON_Utils.h -> cJSON.h
+- 引数：
+    - `path`：オープンするファイルパスを表す文字列
+    - `mode`：ファイルをオープンする際のモード
+        - `r`：テキストファイルを読み込み専用でオープンする。
+- 戻り値：
+    - オープンに成功した場合：オープンしたファイルのポインタ
+    - オープンに失敗した場合：`NULL`
 
----
+**宣言・定義**
 
-```c++
-CJSON_PUBLIC(cJSON *) cJSON_Parse(const char *value);
+- 宣言場所：`stdio.h`
+
+### fread（ファイル読み取り）
+
+```c
+size_t fread(void *buffer, size_t size, size_t count, FILE *stream);
 ```
 
-引数valueで指定された文字列をcJSONオブジェクト群に変換します。
-- 入力（引数）：
-    - 	value：変換する文字列
-- 出力（戻り値）：
-    - 	文字列の変換に成功した場合：変換したcJSONオブジェクト群のうち、0階層のcJSONオブジェクトへのポインタ
-    - 	文字列の変換に失敗した場合：NULL
- 
-文字列をcJSONオブジェクト群に変換する例：\
-変換する文字列：
-```json
-{
-    "key1": "value1",
-    "key2": 1.0
-}
-```
-変換したcJSONオブジェクト群：
-<img width="802" height="738" alt="cJSONオブジェクト群の例 drawio" src="https://github.com/user-attachments/assets/e4ab4d30-7be2-461f-944d-06f007ead0d3" />
+引数`stream`で指定したファイルから、引数`size`で指定したバイト数ごとに、引数`count` で指定した個数だけデータを読み取り、引数`buffer` で指定したバッファに格納します。
 
-#### 宣言・定義
--   宣言場所：cJSON_Utils.h -> cJSON.h
+- 引数：
+    - `buffer` ：データを格納するバッファのポインタ
+    - `size` ：1つ当たりのデータのバイト数
+    - `count` ：読み取るデータの個数
+    - `stream` ：文字読み込みをするファイルのポインタ
+- 戻り値：
+    - 読み取ったデータの個数
 
----
+**宣言・定義**
 
-```c++
-CJSON_PUBLIC(char *) cJSON_Print(const cJSON *item);
+- 宣言場所：`stdio.h`
+
+### free（メモリ解放）
+
+```c
+void free(void *ptr);
+
 ```
 
-引数itemで指定されたitemから、JSON形式の文字列を生成します。
-- 入力（引数）：
-    - 	item：JSON形式の文字列を生成するcJSONオブジェクトへのポインタ
-- 出力（戻り値）：
-    - 	JSON形式の文字列の生成に成功した場合：生成したJSON形式の文字列
-    - 	JSON形式の文字列の生成に失敗した場合：NULL
+引数`ptr`で指定したメモリ領域を解放します。
 
-#### 宣言・定義
--   宣言場所：cJSON_Utils.h -> cJSON.h
+- 引数：
+    - `ptr`：解放するメモリ領域
+- 戻り値：無し
 
----
+**宣言・定義**
 
-```c++
-CJSON_PUBLIC(cJSON *) cJSON_Duplicate(const cJSON *item, cJSON_bool recurse);
+- 宣言場所：`stdlib.h`
+
+### fseek（ファイルが指す位置の移動）
+
+```c
+void fseek(FILE *fp, long offset, int origin);
+
 ```
 
-引数itemで指定されたcJSONオブジェクトを複製します。引数recurseを指定して、引数itemが格納しているcJSONオブジェクト（next, prev, child）も複製するかを制御します。\
-・引数recurseがtrueの場合：引数itemが格納しているcJSONオブジェクトも複製し、複製したcJSONオブジェクトに置き換えます。\
-・引数recurseがfalseの場合：引数itemが格納しているcJSONオブジェクトは複製せず、引数itemが格納しているcJSONオブジェクトを参照します。
-- 入力（引数）：
-    - 	item：複製するcJSONオブジェクトへのポインタ
-    - 	recurse：引数itemで指定されたcJSONオブジェクトが格納しているcJSONオブジェクトも再帰的に複製するかの真偽値
-- 出力（戻り値）：
-    - 	cJSONオブジェクトの複製に成功した場合：複製したcJSONオブジェクトへのポインタ
-    - 	cJSONオブジェクトの複製に失敗した場合：NULL
+引数`fp` で指定したファイルが指す位置を、引数`origin` で指定した位置から引数`offset` で指定したバイト分移動した位置に設定します。
 
-#### 宣言・定義
--   宣言場所：cJSON_Utils.h -> cJSON.h
+- 引数：
+    - `fp`：ファイルが指す位置を移動させるファイルのポインタ
+    - `offset` ：引数`origin` で指定した位置から移動するバイト数
+    - `origin` ：移動の起点となる位置
+        - `SEEK_END` ：ファイルの終端
+- 戻り値：無し
 
----
+**宣言・定義**
 
-```c++
-CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToArray(cJSON *array, cJSON *item);
-```
-引数itemで指定されたcJSONオブジェクトを、引数arrayで指定されたcJSONオブジェクト（JSON配列）に追加します。
-- 入力（引数）：
-    - 	array：cJSONオブジェクトを追加する対象のcJSONオブジェクト（JSON配列）へのポインタ
-    - 	item：「JSON配列」に追加するcJSONオブジェクトへのポインタ
-- 出力（戻り値）：
-    - 	cJSONオブジェクト（JSON配列）への追加が成功した場合：1
-    - 	cJSONオブジェクト（JSON配列）への追加が失敗した場合：0
+- 宣言場所：`stdio.h`
 
-#### 宣言・定義
--   宣言場所：cJSON_Utils.h -> cJSON.h
+### ftell（ファイルが指す位置の取得）
 
----
+```c
+long fseek(FILE *fp);
 
-```c++
-CJSON_PUBLIC(cJSON_bool) cJSON_AddItemToObject(cJSON *object, const char *string, cJSON *item);
 ```
 
-引数stringで指定されたキーと、引数itemで指定されたcJSONオブジェクトの組を、引数objectで指定されたcJSONオブジェクト（JSONオブジェクト）に追加します。
-- 入力（引数）：
-    - object：cJSONオブジェクトを追加する対象のcJSONオブジェクト（JSONオブジェクト）へのポインタ
-    - string：「JSONオブジェクト」に追加するcJSONオブジェクトのキーに使用する文字列
-    - item：「JSONオブジェクト」に追加するcJSONオブジェクトへのポインタ
-- 出力（戻り値）：
-    - cJSONオブジェクト（JSONオブジェクト）への追加が成功した場合：1
-    - cJSONオブジェクト（JSONオブジェクト）への追加が失敗した場合：0
+引数`fp` で指定したファイルが指す位置を取得して返します。
 
-#### 宣言・定義
--   宣言場所：cJSON_Utils.h -> cJSON.h
+- 引数：
+    - `fp`：ファイルが指す位置を取得するファイルのポインタ
+- 戻り値：
+    - ファイルが指す位置の取得に成功した場合：ファイルが指す位置
+    - ファイルが指す位置の取得に失敗した場合：`-1`
 
----
+**宣言・定義**
 
-### 標準的な構造体・マクロ関数の説明
+- 宣言場所：`stdio.h`
 
-```c++
-#define ULONG_MAX (__LONG_MAX__ *2UL+1UL)
+### isspace（空白文字の判別）
+
+```c
+int isspace(int c);
 ```
-unsigned long型が取りうる最大値を定義したマクロです。
 
-#### 宣言・定義
-- 定義場所：limits.h
+引数cで指定した文字コードが、空白文字であるかを判別し、その判別結果を返します。
 
----
+- 引数：
+    - `c`：判別する文字
+- 戻り値：
+    - 空白文字である場合：`0`以外の値
+    - 空白文字でない場合：`0`
 
-```c++
-#define DBL_EPSILON __DBL_EPSILON__
-```
-「1.0」と「1.0より大きい次の表現可能な浮動点小数との差」であるマシンイプシロンを定義したマクロです。
+**宣言・定義**
 
-#### 宣言・定義
-- 定義場所：float.h
+- 宣言場所：`ctype.h`
 
----
+### malloc（メモリ確保）
 
-```c++
-size_t
-```
-オブジェクトのサイズ（バイト単位）を表現するのに十分な大きさが保障された、符号なし整数型です。
-
-#### 宣言・定義
-- 宣言場所：stdlib.h
-
----
-
-```c++
-int strcmp(const char *s1, const char *s2);
-```
-引数s1で指定された文字列と引数s2で指定された文字列を先頭から1文字ずつ比較し、どちらが大きいか、小さいか、あるいは等しいかを判定します。
-
-- 入力（引数）：
-    - s1：比較する1つ目の文字列
-    - s2：比較する2つ目の文字列
-- 出力（戻り値）：
-    - 引数s1で指定された文字列が引数s2で指定された文字列よりも辞書順で小さい場合：負の値
-    - 引数s1で指定された文字列と引数s2で指定された文字列が等しい場合：0
-    - 引数s1で指定された文字列が引数s2で指定された文字列よりも辞書順で大きい場合：正の値
- 
-※ 同じアルファベットの大文字小文字を比較した時には、小文字のほうが辞書順で大きいと判断されます。
-
-#### 宣言・定義
--    宣言場所：string.h
-
----
-
-```c++
-size_t strlen(const char *s);
-```
-引数sで指定された文字列の長さを計算します。文字列の先頭から、終端文字`\0`の直前までの文字数を返します。
-
-- 入力（引数）：
-    - s：長さを計算する文字列
-- 出力（戻り値）：
-    - 終端文字`\0`の直前までの文字数
-
-#### 宣言・定義
-- 宣言場所：string.h
-
----
-
-```c++
-int tolower(int c);
-```
-引数cで指定された文字コードが大文字のアルファベットであった場合に、それに対応する小文字に変換して返します。
-
-- 入力（引数）：
-    - c：変換する文字の文字コードを表す整数
-- 出力（戻り値）：
-    - 引数cが'A'から'Z'までの大文字アルファベットの場合：対応する小文字の文字コード
-    - それ以外の場合：引数cの値
-
-#### 宣言・定義
-- 宣言場所：ctype.h
-
----
-
-```c++
-double fabs(double a);
-```
-引数aで指定された浮動点小数の絶対値を計算し、計算した結果を返します。
-
-- 入力（引数）：
-    - a：絶対値を計算する値
-- 出力（戻り値）：
-    - 引数aの絶対値を計算した結果
-
-#### 宣言・定義
--    宣言場所：math.h
-
----
-
-```c++
+```c
 void *malloc(size_t size);
 ```
-引数sizeで指定されたバイト数のメモリ領域をヒープ領域から確保し、その領域へのポインタを返します。
 
-- 入力（引数）：
-    - size：確保するメモリ領域のバイト数
-- 出力（戻り値）：
-    - メモリ領域の確保に成功した場合：確保されたメモリ領域の先頭アドレスを指すポインタ
-    - メモリ領域の確保に失敗した場合：NULL
+引数`size` で指定したバイト数のメモリ領域を確保し、そのメモリ領域のポインタを返します。
 
-#### 宣言・定義
-- 宣言場所：stdlib.h
+- 引数：
+    - `size`：確保するメモリ領域のバイト数
+- 戻り値：
+    - メモリ領域の確保に成功した場合：確保したメモリ領域のポインタ
+    - メモリ領域の確保に失敗した場合：`NULL`
 
----
+**宣言・定義**
 
-```c++
-void free(void *ptr)
+- 宣言場所：`stdlib.h`
+
+### memset（メモリ領域の値の置き換え）
+
+```c
+void *memset(void *s, int c, size_t n);
 ```
-引数ptrで指定されたメモリ領域を解放します。
 
-- 入力（引数）：
-    - ptr：解放するメモリ領域
-- 出力（戻り値）：
-    - 無し
+引数`s` で指定したメモリ領域のうち、先頭から引数`n` で指定したバイト数分、引数`c` で指定した文字に置き換えます。
 
-#### 宣言・定義
-- 宣言場所：stdlib.h
+- 引数：
+    - `s` ：メモリ領域のポインタ
+    - `c` ：メモリ領域に置き換える文字
+    - `n` ：メモリ領域を置き換えるバイト数
+- 戻り値：
+    - 引数`s` で指定したメモリ領域のポインタ
 
----
+**宣言・定義**
 
-```c++
-int sprintf(char *buffer, const char *format, ...);
-```
-引数formatで指定された書式に従って、第三引数以降で指定された変数を文字列に変換し、引数bufferが指す文字配列に書き込みます。
+- 宣言場所：`string.h`
 
-- 入力（引数）：
-    - buffer：書き込み先の文字配列
-    - format：書式を指定する文字列
-    - ...：指定した書式に対応する可変長引数
-- 出力（戻り値）：
-    - 書き込みに成功した場合：書き込まれた文字数
-    - 書き込みに失敗した場合：負の値
+### printf（標準出力）
 
-#### 宣言・定義
--    宣言場所：stdio.h
-
----
-
-```c++
+```c
 int printf(const char* str, ...);
 ```
-引数srcで指定された書式が含まれた文字列に従って、第二引数以降で指定された引数を文字列に変換し、標準出力します。
 
-- 入力（引数）：
-    - str：標準出力する書式が含まれた文字列
-    - ...：引数strに含まれる書式の数だけ対応する変数を格納した可変長引数
-- 出力（戻り値）：
-    - 文字列の標準出力に成功した場合：標準出力した文字数
-    - 文字列の標準出力に失敗した場合：負の数
+引数`src`で指定した文字列を標準出力します。引数`src` で指定した文字列が書式を含む場合、その書式に第二引数以降で指定した引数の値を格納した文字列を標準出力します。
 
-#### 宣言・定義
-- 宣言場所：iniparser.h -> dictionary.h -> stdio.h
+- 引数：
+    - `str`：標準出力する文字列
+    - `...`：引数`str`が含む書式に格納する引数（可変長引数）
+- 戻り値：
+    - 標準出力に成功した場合：標準出力した文字数
+    - 標準出力に失敗した場合：負の数
 
----
+**宣言・定義**
+
+- 宣言場所：`stdio.h`
+
+### rewind（ファイルが指す位置を先頭に移動）
+
+```c
+void rewind(FILE *fp);
+```
+
+引数`fp` で指定したファイルが指す位置を、ファイルの先頭に移動させます。
+
+- 引数：
+    - `str`：標準出力する文字列
+    - `...`：引数`str`が含む書式に格納する引数（可変長引数）
+- 戻り値：
+    - 標準出力に成功した場合：標準出力した文字数
+    - 標準出力に失敗した場合：負の数
+
+**宣言・定義**
+
+- 宣言場所：`stdio.h`
+
+### strcmp（文字列比較）
+
+```c
+int strcmp(const char *s1, const char *s2);
+```
+
+引数`s1` で指定した文字列と引数`s2` で指定した文字列を比較し、その比較結果を返します。
+
+- 引数：
+    - `s1` ：比較する文字列
+    - `s2` ：比較する文字列
+- 戻り値：
+    - 引数`s1` ,`s2` が等しい場合：`0`
+    - 引数`s1` が引数`s2` より辞書順で大きい場合：正の数
+    - 引数`s1` が引数`s2` より辞書順で小さい場合：負の数
+
+**宣言・定義**
+
+- 宣言場所：`string.h`
+
+### strlen（文字列長の計算）
+
+```c
+size_t strlen(const char *str);
+```
+
+引数`str` で指定した文字列の先頭から終端文字`\0`までの長さを計算して返します。文字列長には、終端文字`\0` の長さは含まれません。
+
+- 引数：
+    - `str` ：文字列長を計算する文字列
+- 戻り値：
+    - 引数`str` で指定した文字列の文字列長
+
+**宣言・定義**
+
+- 宣言場所：`string.h`
+
+### strncmp（文字列比較）
+
+```c
+int strncmp(const char *s1, const char *s2, size_t num);
+```
+
+引数`s1` で指定した文字列と引数`s2` で指定した文字列を、先頭から引数`num` で指定したバイト数分比較し、その比較結果を返します。
+
+- 引数：
+    - `s1` ：比較する文字列
+    - `s2` ：比較する文字列
+    - `n` ：文字列を比較するバイト数
+- 戻り値：
+    - 引数`s1` ,`s2` が等しい場合：`0`
+    - 引数`s1` が引数`s2` より辞書順で大きい場合：正の数
+    - 引数`s1` が引数`s2` より辞書順で小さい場合：負の数
+
+**宣言・定義**
+
+- 宣言場所：`string.h`
+
+### strtod（文字列から浮動小数点数への変換）
+
+```c
+double strtod(const char *s, char **endp);
+```
+
+引数`s` で指定した文字列を、浮動小数点数に変換して返します。引数`endp` には、変換に成功した場合は`NULL` 、変換に失敗した場合は、変換に失敗した文字へのポインタを格納します。
+
+- 引数：
+    - `s` ：変換する文字列
+    - `endp` ：変換失敗時の文字を格納するポインタ
+- 戻り値：
+    - 変換に成功した場合：引数`s`を変換した浮動小数点数
+    - 変換に失敗した場合：`0`
+
+**宣言・定義**
+
+- 宣言場所：`stdlib.h`
+
+### tolower（大文字を小文字に変換）
+
+```c
+int tolower(int c);
+```
+
+引数`c` で指定した文字を小文字に変換して返します。
+
+- 引数：
+    - `c` ：変換する文字
+- 戻り値：
+    - 変換に成功した場合：変換した文字
+    - 変換に失敗した場合：引数`c` で指定した文字
+
+**宣言・定義**
+
+- 宣言場所：`ctype.h`
 
 ```c++
 /*
@@ -470,35 +549,11 @@ int printf(const char* str, ...);
   THE SOFTWARE.
 */
 
-/* disable warnings about old C89 functions in MSVC */
-#if !defined(_CRT_SECURE_NO_DEPRECATE) && defined(_MSC_VER)
-#define _CRT_SECURE_NO_DEPRECATE
-#endif
-
-#ifdef __GNUCC__
-#pragma GCC visibility push(default)
-#endif
-#if defined(_MSC_VER)
-#pragma warning (push)
-/* disable warning about single line comments in system headers */
-#pragma warning (disable ：4001)
-#endif
-
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
-#include <math.h>
-#include <float.h>
-#include <math.h>
-
-#if defined(_MSC_VER)
-#pragma warning (pop)
-#endif
-#ifdef __GNUCC__
-#pragma GCC visibility pop
-#endif
 
 #include "cJSON_Utils.h"
 
@@ -513,28 +568,498 @@ int printf(const char* str, ...);
 #endif
 #define false ((cJSON_bool)0)
 
+typedef struct {
+    const unsigned char *content;
+    size_t length;
+    size_t offset;
+} parse_buffer;
+
+static cJSON *create_new_item() {
+    cJSON *node;
+
+    node = (cJSON *) malloc(sizeof(cJSON));
+    if (node) {
+        memset(node, '\0', sizeof(cJSON));
+    }
+
+    return node;
+}
+
+static cJSON_bool can_read(const parse_buffer *const buffer, size_t size) {
+    if (buffer == NULL) {
+        return false;
+    }
+
+    return buffer->offset + size <= buffer->length;
+}
+
+/* check if the buffer can be accessed at the given index (starting with 0) */
+static cJSON_bool can_access_at_index(const parse_buffer *const buffer, size_t index) {
+    if (buffer == NULL) {
+        return false;
+    }
+
+    return buffer->offset + index < buffer->length;
+}
+
+static const unsigned char *buffer_at_offset(const parse_buffer *const buffer) {
+    return buffer->content + buffer->offset;
+}
+
+static cJSON_bool parse_number(cJSON *const item, parse_buffer *const input_buffer) {
+    double number = 0;
+    unsigned char *after_end = NULL;
+    unsigned char number_c_string[64];
+    unsigned char c;
+    size_t i = 0;
+
+    if ((input_buffer == NULL) || (input_buffer->content == NULL)) {
+        return false;
+    }
+
+    /* copy the number into a temporary buffer and replace '.' with the decimal point
+     * of the current locale (for strtod)
+     * This also takes care of '\0' not necessarily being available for marking the end of the input */
+    for (i = 0; (i < (sizeof(number_c_string) - 1)) && can_access_at_index(input_buffer, i); i++) {
+        c = buffer_at_offset(input_buffer)[i];
+
+        if ((c >= '0' && c <= '9') || c == '+' || c == '-' || c == 'e' || c == 'E' || c == '.') {
+            number_c_string[i] = c;
+        } else {
+            break;
+        }
+    }
+    number_c_string[i] = '\0';
+
+    number = strtod((const char *) number_c_string, (char **) &after_end);
+    if (number_c_string == after_end) {
+        return false; /* parse_error */
+    }
+
+    item->valuedouble = number;
+
+    /* use saturation in case of overflow */
+    if (number >= INT_MAX) {
+        item->valueint = INT_MAX;
+    } else if (number <= (double) INT_MIN) {
+        item->valueint = INT_MIN;
+    } else {
+        item->valueint = (int) number;
+    }
+
+    item->type = cJSON_Number;
+
+    input_buffer->offset += (size_t) (after_end - number_c_string);
+    return true;
+}
+
+/* Parse the input text into an unescaped cinput, and populate item. */
+static cJSON_bool parse_string(cJSON *const item, parse_buffer *const input_buffer) {
+    const unsigned char *input_pointer = buffer_at_offset(input_buffer) + 1;
+    const unsigned char *input_end = buffer_at_offset(input_buffer) + 1;
+    unsigned char *output_pointer = NULL;
+    unsigned char *output = NULL;
+    unsigned char sequence_length;
+    cJSON_bool isSuccess = true;
+    size_t allocation_length = 0;
+    size_t skipped_bytes = 0;
+
+    if (!can_access_at_index(input_buffer, 0) || buffer_at_offset(input_buffer)[0] != '\"') {
+        return false;
+    }
+
+    /* calculate approximate size of the output (overestimate) */
+    while (((size_t) (input_end - input_buffer->content) < input_buffer->length) && (*input_end != '\"')) {
+        /* is escape sequence */
+        if (input_end[0] == '\\') {
+            if ((size_t) (input_end + 1 - input_buffer->content) >= input_buffer->length) {
+                /* prevent buffer overflow when last input character is a backslash */
+                return false;
+            }
+            skipped_bytes++;
+            input_end++;
+        }
+        input_end++;
+    }
+
+    /* This is at most how much we need for the output */
+    allocation_length = (size_t) (input_end - buffer_at_offset(input_buffer)) - skipped_bytes;
+    output = (unsigned char *) malloc(allocation_length + sizeof(""));
+    if (output == NULL) {
+        return false; /* allocation failure */
+    }
+
+    output_pointer = output;
+    /* loop through the string literal */
+    while (input_pointer < input_end) {
+        if (*input_pointer != '\\') {
+            *output_pointer++ = *input_pointer++;
+        }
+        /* escape sequence */
+        else {
+            sequence_length = 2;
+
+            switch (input_pointer[1]) {
+                case 'b':
+                    *output_pointer++ = '\b';
+                    break;
+                case 'f':
+                    *output_pointer++ = '\f';
+                    break;
+                case 'n':
+                    *output_pointer++ = '\n';
+                    break;
+                case 'r':
+                    *output_pointer++ = '\r';
+                    break;
+                case 't':
+                    *output_pointer++ = '\t';
+                    break;
+                case '\"':
+                case '\\':
+                case '/':
+                    *output_pointer++ = input_pointer[1];
+                    break;
+
+                default:
+                    isSuccess = false;
+                    break;
+            }
+
+            if (!isSuccess) {
+                break;
+            }
+
+            input_pointer += sequence_length;
+        }
+    }
+
+    if (isSuccess) {
+        /* zero terminate the output */
+        *output_pointer = '\0';
+
+        item->type = cJSON_String;
+        item->valuestring = (char *) output;
+
+        input_buffer->offset = (size_t) (input_end - input_buffer->content);
+        input_buffer->offset++;
+
+        return true;
+    } else {
+        free(output);
+        output = NULL;
+
+        if (input_pointer != NULL) {
+            input_buffer->offset = (size_t) (input_pointer - input_buffer->content);
+        }
+
+        return false;
+    }
+}
+
+/* Utility to jump whitespace and cr/lf */
+static parse_buffer *buffer_skip_whitespace(parse_buffer *const buffer) {
+    if ((buffer == NULL) || (buffer->content == NULL)) {
+        return NULL;
+    }
+
+    if (!can_access_at_index(buffer, 0)) {
+        return buffer;
+    }
+
+    while (can_access_at_index(buffer, 0) && isspace(buffer_at_offset(buffer)[0])) {
+        buffer->offset++;
+    }
+
+    if (buffer->offset == buffer->length) {
+        buffer->offset--;
+    }
+
+    return buffer;
+}
+
+/* Predeclare these prototypes. */
+static cJSON_bool parse_value(cJSON *const item, parse_buffer *const input_buffer);
+
+/* Build an array from input text. */
+static cJSON_bool parse_array(cJSON *const item, parse_buffer *const input_buffer) {
+    cJSON *head = NULL; /* head of the linked list */
+    cJSON *current_item = NULL;
+    cJSON *new_item = NULL;
+    cJSON_bool isSuccess = true;
+
+    input_buffer->offset++;
+    buffer_skip_whitespace(input_buffer);
+
+    /* step back to character in front of the first element */
+    input_buffer->offset--;
+    /* loop through the comma separated array elements */
+    do {
+        /* allocate next item */
+        new_item = create_new_item();
+        if (new_item == NULL) {
+            isSuccess = false;
+            break;
+        }
+
+        /* attach next item to list */
+        if (head == NULL) {
+            /* start the linked list */
+            head = new_item;
+            current_item = new_item;
+        } else {
+            /* add to the end and advance */
+            current_item->next = new_item;
+            new_item->prev = current_item;
+            current_item = new_item;
+        }
+
+        if (!can_access_at_index(input_buffer, 1)) {
+            isSuccess = false;
+            break;
+        }
+
+        /* parse next value */
+        input_buffer->offset++;
+        buffer_skip_whitespace(input_buffer);
+        if (!parse_value(current_item, input_buffer)) {
+            isSuccess = false;
+            break;
+        }
+        buffer_skip_whitespace(input_buffer);
+    } while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == ','));
+
+    if (isSuccess) {
+        head->prev = current_item;
+        item->type = cJSON_Array;
+        item->child = head;
+        input_buffer->offset++;
+
+        return true;
+    } else {
+        cJSON_Delete(head);
+
+        return false;
+    }
+}
+
+/* Build an object from the text. */
+static cJSON_bool parse_object(cJSON *const item, parse_buffer *const input_buffer) {
+    cJSON *head = NULL; /* linked list head */
+    cJSON *current_item = NULL;
+    cJSON *new_item = NULL;
+    cJSON_bool isSuccess = true;
+
+    input_buffer->offset++;
+    buffer_skip_whitespace(input_buffer);
+
+    /* step back to character in front of the first element */
+    input_buffer->offset--;
+    /* loop through the comma separated array elements */
+    do {
+        /* allocate next item */
+        new_item = create_new_item();
+        if (new_item == NULL) {
+            isSuccess = false;
+            break;
+        }
+
+        /* attach next item to list */
+        if (head == NULL) {
+            /* start the linked list */
+            head = new_item;
+            current_item = new_item;
+        } else {
+            /* add to the end and advance */
+            current_item->next = new_item;
+            new_item->prev = current_item;
+            current_item = new_item;
+        }
+
+        if (!can_access_at_index(input_buffer, 1)) {
+            isSuccess = false;
+            break;
+        }
+
+        /* parse the name of the child */
+        input_buffer->offset++;
+        buffer_skip_whitespace(input_buffer);
+        if (!parse_string(current_item, input_buffer)) {
+            isSuccess = false;
+            break;
+        }
+        buffer_skip_whitespace(input_buffer);
+
+        /* swap valuestring and string, because we parsed the name */
+        current_item->string = current_item->valuestring;
+        current_item->valuestring = NULL;
+
+        if (!can_access_at_index(input_buffer, 0) || (buffer_at_offset(input_buffer)[0] != ':')) {
+            isSuccess = false;
+            break;
+        }
+
+        /* parse the value */
+        input_buffer->offset++;
+        buffer_skip_whitespace(input_buffer);
+        if (!parse_value(current_item, input_buffer)) {
+            isSuccess = false;
+            break;
+        }
+        buffer_skip_whitespace(input_buffer);
+    } while (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == ','));
+
+    if (isSuccess) {
+        if (head != NULL) {
+            head->prev = current_item;
+        }
+
+        item->type = cJSON_Object;
+        item->child = head;
+
+        input_buffer->offset++;
+        return true;
+    } else {
+        cJSON_Delete(head);
+
+        return false;
+    }
+}
+
+/* Parser core - when encountering text, process appropriately. */
+static cJSON_bool parse_value(cJSON *const item, parse_buffer *const input_buffer) {
+    /* parse the different types of values */
+    /* null */
+    if (can_read(input_buffer, 4) && (strncmp((const char *) buffer_at_offset(input_buffer), "null", 4) == 0)) {
+        item->type = cJSON_NULL;
+        input_buffer->offset += 4;
+        return true;
+    }
+    /* false */
+    if (can_read(input_buffer, 5) && (strncmp((const char *) buffer_at_offset(input_buffer), "false", 5) == 0)) {
+        item->type = cJSON_False;
+        input_buffer->offset += 5;
+        return true;
+    }
+    /* true */
+    if (can_read(input_buffer, 4) && (strncmp((const char *) buffer_at_offset(input_buffer), "true", 4) == 0)) {
+        item->type = cJSON_True;
+        item->valueint = 1;
+        input_buffer->offset += 4;
+        return true;
+    }
+    /* string */
+    if (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == '\"')) {
+        return parse_string(item, input_buffer);
+    }
+    /* number */
+    if (can_access_at_index(input_buffer, 0) && ((buffer_at_offset(input_buffer)[0] == '-') || ((buffer_at_offset(input_buffer)[0] >= '0') && (buffer_at_offset(input_buffer)[0] <= '9')))) {
+        return parse_number(item, input_buffer);
+    }
+    /* array */
+    if (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == '[')) {
+        return parse_array(item, input_buffer);
+    }
+    /* object */
+    if (can_access_at_index(input_buffer, 0) && (buffer_at_offset(input_buffer)[0] == '{')) {
+        return parse_object(item, input_buffer);
+    }
+
+    return false;
+}
+
+/* Parse an object - create a new root, and populate. */
+cJSON * json_parse(const char *value, size_t buffer_length) {
+    parse_buffer buffer = {0, 0, 0};
+    cJSON *item = NULL;
+
+    if (value == NULL || 0 == buffer_length) {
+        return NULL;
+    }
+
+    buffer.content = (const unsigned char *) value;
+    buffer.length = buffer_length;
+    buffer.offset = 0;
+
+    item = create_new_item();
+    if (item == NULL) {
+        return NULL;
+    }
+
+    if (!parse_value(item, buffer_skip_whitespace(&buffer))) {
+        cJSON_Delete(item);
+        return NULL;
+    }
+
+    return item;
+}
+
+cJSON *load_json_file(const char *filepath) {
+    char *buffer;
+    cJSON *json;
+    FILE *fp;
+    long file_size;
+    size_t read_size;
+
+    fp = fopen(filepath, "r");
+    if (fp == NULL) {
+        return NULL;
+    }
+
+    if (fseek(fp, 0L, SEEK_END) != 0) {
+        fclose(fp);
+        return NULL;
+    }
+
+    file_size = ftell(fp);
+    if (file_size == -1L) {
+        fclose(fp);
+        return NULL;
+    }
+
+    rewind(fp);
+
+    buffer = (char *) calloc(file_size + 1, sizeof(char));
+    if (buffer == NULL) {
+        fclose(fp);
+        return NULL;
+    }
+
+    read_size = fread(buffer, sizeof(char), file_size, fp);
+    if (read_size != (size_t) file_size) {
+        if (!feof(fp) && ferror(fp)) {
+            fclose(fp);
+            free(buffer);
+            return NULL;
+        }
+    }
+
+    buffer[read_size] = '\0';
+
+    fclose(fp);
+
+    json = json_parse(buffer, strlen(buffer) + sizeof(""));
+    free(buffer);
+
+    return json;
+}
+
 /* string comparison which doesn't consider NULL pointers equal */
-static int compare_strings(const unsigned char *string1, const unsigned char *string2, const cJSON_bool case_sensitive)
-{
-    if ((string1 == NULL) || (string2 == NULL))
-    {
+static int compare_strings(const unsigned char *string1, const unsigned char *string2, const cJSON_bool case_sensitive) {
+    if ((string1 == NULL) || (string2 == NULL)) {
         return 1;
     }
 
-    if (string1 == string2)
-    {
+    if (string1 == string2) {
         return 0;
     }
 
-    if (case_sensitive)
-    {
-        return strcmp((const char*)string1, (const char*)string2);
+    if (case_sensitive) {
+        return strcmp((const char *) string1, (const char *) string2);
     }
 
-    for(; tolower(*string1) == tolower(*string2); (void)string1++, string2++)
-    {
-        if (*string1 == '\0')
-        {
+    for (; tolower(*string1) == tolower(*string2); (void) string1++, string2++) {
+        if (*string1 == '\0') {
             return 0;
         }
     }
@@ -542,58 +1067,8 @@ static int compare_strings(const unsigned char *string1, const unsigned char *st
     return tolower(*string1) - tolower(*string2);
 }
 
-/* securely comparison of floating-point variables */
-static cJSON_bool compare_double(double a, double b)
-{
-    double maxVal = fabs(a) > fabs(b) ? fabs(a) ：fabs(b);
-    return (fabs(a - b) <= maxVal * DBL_EPSILON);
-}
-
-/* calculate the length of a string if encoded as JSON pointer with ~0 and ~1 escape sequences */
-static size_t pointer_encoded_length(const unsigned char *string)
-{
-    size_t length;
-    for (length = 0; *string != '\0'; (void)string++, length++)
-    {
-        /* character needs to be escaped? */
-        if ((*string == '~') || (*string == '/'))
-        {
-            length++;
-        }
-    }
-
-    return length;
-}
-
-/* copy a string while escaping '~' and '/' with ~0 and ~1 JSON pointer escape codes */
-static void encode_string_as_pointer(unsigned char *destination, const unsigned char *source)
-{
-    for (; source[0] != '\0'; (void)source++, destination++)
-    {
-        if (source[0] == '/')
-        {
-            destination[0] = '~';
-            destination[1] = '1';
-            destination++;
-        }
-        else if (source[0] == '~')
-        {
-            destination[0] = '~';
-            destination[1] = '0';
-            destination++;
-        }
-        else
-        {
-            destination[0] = source[0];
-        }
-    }
-
-    destination[0] = '\0';
-}
-
 /* sort lists using mergesort */
-static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
-{
+static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive) {
     cJSON *smaller;
     cJSON *first = list;
     cJSON *second = list;
@@ -601,38 +1076,32 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
     cJSON *result = list;
     cJSON *result_tail = NULL;
 
-    if ((list == NULL) || (list->next == NULL))
-    {
+    if ((list == NULL) || (list->next == NULL)) {
         /* One entry is sorted already. */
         return result;
     }
 
-    while ((current_item != NULL) && (current_item->next != NULL) && (compare_strings((unsigned char*)current_item->string, (unsigned char*)current_item->next->string, case_sensitive) < 0))
-    {
+    while ((current_item != NULL) && (current_item->next != NULL) && (compare_strings((unsigned char *) current_item->string,(unsigned char *) current_item->next->string,case_sensitive) < 0)) {
         /* Test for list sorted. */
         current_item = current_item->next;
     }
-    if ((current_item == NULL) || (current_item->next == NULL))
-    {
+    if ((current_item == NULL) || (current_item->next == NULL)) {
         /* Leave sorted lists unmodified. */
         return result;
     }
 
     /* reset pointer to the beginning */
     current_item = list;
-    while (current_item != NULL)
-    {
+    while (current_item != NULL) {
         /* Walk two pointers to find the middle. */
         second = second->next;
         current_item = current_item->next;
         /* advances current_item two steps at a time */
-        if (current_item != NULL)
-        {
+        if (current_item != NULL) {
             current_item = current_item->next;
         }
     }
-    if ((second != NULL) && (second->prev != NULL))
-    {
+    if ((second != NULL) && (second->prev != NULL)) {
         /* Split the lists */
         second->prev->next = NULL;
         second->prev = NULL;
@@ -644,57 +1113,43 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
     result = NULL;
 
     /* Merge the sub-lists */
-    while ((first != NULL) && (second != NULL))
-    {
+    while ((first != NULL) && (second != NULL)) {
         smaller = NULL;
-        if (compare_strings((unsigned char*)first->string, (unsigned char*)second->string, case_sensitive) < 0)
-        {
+        if (compare_strings((unsigned char *) first->string, (unsigned char *) second->string, case_sensitive) < 0) {
             smaller = first;
-        }
-        else
-        {
+        } else {
             smaller = second;
         }
 
-        if (result == NULL)
-        {
+        if (result == NULL) {
             /* start merged list with the smaller element */
             result_tail = smaller;
             result = smaller;
-        }
-        else
-        {
+        } else {
             /* add smaller element to the list */
             result_tail->next = smaller;
             smaller->prev = result_tail;
             result_tail = smaller;
         }
 
-        if (first == smaller)
-        {
+        if (first == smaller) {
             first = first->next;
-        }
-        else
-        {
+        } else {
             second = second->next;
         }
     }
 
-    if (first != NULL)
-    {
+    if (first != NULL) {
         /* Append rest of first list. */
-        if (result == NULL)
-        {
+        if (result == NULL) {
             return first;
         }
         result_tail->next = first;
         first->prev = result_tail;
     }
-    if (second != NULL)
-    {
+    if (second != NULL) {
         /* Append rest of second list */
-        if (result == NULL)
-        {
+        if (result == NULL) {
             return second;
         }
         result_tail->next = second;
@@ -704,232 +1159,37 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive)
     return result;
 }
 
-static void sort_object(cJSON * const object, const cJSON_bool case_sensitive)
-{
-    if (object == NULL)
-    {
-        return;
-    }
-    object->child = sort_list(object->child, case_sensitive);
-}
-
-static void compose_patch(cJSON * const patches, const unsigned char * const operation, const unsigned char * const path, const unsigned char *suffix, const cJSON * const value)
-{
-    unsigned char *full_path;
-    cJSON *patch = NULL;
-    size_t suffix_length, path_length;
-
-    if ((patches == NULL) || (operation == NULL) || (path == NULL))
-    {
-        return;
-    }
-
-    patch = cJSON_CreateObject();
-    if (patch == NULL)
-    {
-        return;
-    }
-    cJSON_AddItemToObject(patch, "op", cJSON_CreateString((const char*)operation));
-
-    if (suffix == NULL)
-    {
-        cJSON_AddItemToObject(patch, "path", cJSON_CreateString((const char*)path));
-    }
-    else
-    {
-        suffix_length = pointer_encoded_length(suffix);
-        path_length = strlen((const char*)path);
-        full_path = (unsigned char*)malloc(path_length + suffix_length + sizeof("/"));
-
-        sprintf((char*)full_path, "%s/", (const char*)path);
-        encode_string_as_pointer(full_path + path_length + 1, suffix);
-
-        cJSON_AddItemToObject(patch, "path", cJSON_CreateString((const char*)full_path));
-        free(full_path);
-    }
-
-    if (value != NULL)
-    {
-        cJSON_AddItemToObject(patch, "value", cJSON_Duplicate(value, 1));
-    }
-    cJSON_AddItemToArray(patches, patch);
-}
-
-void create_patches(cJSON * const patches, const unsigned char * const path, cJSON * const from, cJSON * const to, const cJSON_bool case_sensitive)
-{
-    int diff;
-    unsigned char *new_path;
-    size_t index;
-    cJSON *from_child, *to_child;
-    size_t path_length, from_child_name_length;
-
-    if ((from == NULL) || (to == NULL))
-    {
-        return;
-    }
-
-    if ((from->type & 0xFF) != (to->type & 0xFF))
-    {
-        compose_patch(patches, (const unsigned char*)"replace", path, 0, to);
-        return;
-    }
-
-    switch (from->type & 0xFF)
-    {
-        case cJSON_Number:
-            if ((from->valueint != to->valueint) || !compare_double(from->valuedouble, to->valuedouble))
-            {
-                compose_patch(patches, (const unsigned char*)"replace", path, NULL, to);
-            }
-            return;
-
-        case cJSON_String:
-            if (strcmp(from->valuestring, to->valuestring) != 0)
-            {
-                compose_patch(patches, (const unsigned char*)"replace", path, NULL, to);
-            }
-            return;
-
-        case cJSON_Array:
-        {
-            index = 0;
-            from_child = from->child;
-            to_child = to->child;
-            new_path = (unsigned char*)malloc(strlen((const char*)path) + 20 + sizeof("/")); /* Allow space for 64bit int. log10(2^64) = 20 */
-
-            /* generate patches for all array elements that exist in both "from" and "to" */
-            for (index = 0; (from_child != NULL) && (to_child != NULL); (void)(from_child = from_child->next), (void)(to_child = to_child->next), index++)
-            {
-                /* check if conversion to unsigned long is valid
-                 * This should be eliminated at compile time by dead code elimination
-                 * if size_t is an alias of unsigned long, or if it is bigger */
-                if (index > ULONG_MAX)
-                {
-                    free(new_path);
-                    return;
-                }
-                sprintf((char*)new_path, "%s/%lu", path, (unsigned long)index); /* path of the current array element */
-                create_patches(patches, new_path, from_child, to_child, case_sensitive);
-            }
-
-            /* remove leftover elements from 'from' that are not in 'to' */
-            for (; (from_child != NULL); (void)(from_child = from_child->next))
-            {
-                /* check if conversion to unsigned long is valid
-                 * This should be eliminated at compile time by dead code elimination
-                 * if size_t is an alias of unsigned long, or if it is bigger */
-                if (index > ULONG_MAX)
-                {
-                    free(new_path);
-                    return;
-                }
-                sprintf((char*)new_path, "%lu", (unsigned long)index);
-                compose_patch(patches, (const unsigned char*)"remove", path, new_path, NULL);
-            }
-            /* add new elements in 'to' that were not in 'from' */
-            for (; (to_child != NULL); (void)(to_child = to_child->next), index++)
-            {
-                compose_patch(patches, (const unsigned char*)"add", path, (const unsigned char*)"-", to_child);
-            }
-            free(new_path);
-            return;
-        }
-
-        case cJSON_Object:
-        {
-            from_child = NULL;
-            to_child = NULL;
-            sort_object(from, case_sensitive);
-            sort_object(to, case_sensitive);
-
-            from_child = from->child;
-            to_child = to->child;
-            /* for all object values in the object with more of them */
-            while ((from_child != NULL) || (to_child != NULL))
-            {
-                if (from_child == NULL)
-                {
-                    diff = 1;
-                }
-                else if (to_child == NULL)
-                {
-                    diff = -1;
-                }
-                else
-                {
-                    diff = compare_strings((unsigned char*)from_child->string, (unsigned char*)to_child->string, case_sensitive);
-                }
-
-                if (diff == 0)
-                {
-                    /* both object keys are the same */
-                    path_length = strlen((const char*)path);
-                    from_child_name_length = pointer_encoded_length((unsigned char*)from_child->string);
-                    new_path = (unsigned char*)malloc(path_length + from_child_name_length + sizeof("/"));
-
-                    sprintf((char*)new_path, "%s/", path);
-                    encode_string_as_pointer(new_path + path_length + 1, (unsigned char*)from_child->string);
-
-                    /* create a patch for the element */
-                    create_patches(patches, new_path, from_child, to_child, case_sensitive);
-                    free(new_path);
-
-                    from_child = from_child->next;
-                    to_child = to_child->next;
-                }
-                else if (diff < 0)
-                {
-                    /* object element doesn't exist in 'to' --> remove it */
-                    compose_patch(patches, (const unsigned char*)"remove", path, (unsigned char*)from_child->string, NULL);
-
-                    from_child = from_child->next;
-                }
-                else
-                {
-                    /* object element doesn't exist in 'from' --> add it */
-                    compose_patch(patches, (const unsigned char*)"add", path, (unsigned char*)to_child->string, to_child);
-
-                    to_child = to_child->next;
-                }
-            }
-            return;
-        }
-
-        default:
-            break;
-    }
-}
-
 int main() {
-    printf("\n--- Testing create_patches ---\n");
-    const char *from_json_string = "{\n"
-                                   "  \"name\"：\"John Doe\",\n"
-                                   "  \"age\"：30,\n"
-                                   "  \"city\"：\"Anytown\",\n"
-                                   "  \"tags\"：[\"json\", \"c\"]\n"
-                                   "}";
+    cJSON *json1, *json2, *json3, *json4, *json5, *json6, *json7, *json8;
 
-    const char *to_json_string = "{\n"
-                                 "  \"name\"：\"Jane Doe\",\n"
-                                 "  \"age\"：31,\n"
-                                 "  \"occupation\"：\"Engineer\",\n"
-                                 "  \"tags\"：[\"json\", \"c\", \"patch\"]\n"
-                                 "}";
+    json1 = load_json_file("example1.json");
 
-    cJSON *from_json = cJSON_Parse(from_json_string);
-    cJSON *to_json = cJSON_Parse(to_json_string);
-    cJSON *patches_array = cJSON_CreateArray();
+    json2 = load_json_file("example2.json");
 
-    create_patches(patches_array, (const unsigned char *)"", from_json, to_json, cJSON_True);
+    json3 = load_json_file("example3.json");
 
-    char *patches_string = cJSON_Print(patches_array);
-    printf("Generated Patches:\n%s\n", patches_string);
-    free(patches_string);
+    json4 = load_json_file("example4.json");
 
-    cJSON_Delete(from_json);
-    cJSON_Delete(to_json);
-    cJSON_Delete(patches_array);
+    json5 = load_json_file("example5.json");
+
+    json6 = load_json_file("example6.json");
+    json6->child = sort_list(json6->child, cJSON_False);
+
+    json7 = load_json_file("example7.json");
+    printf("%s", json7->valuestring);
+
+    json8 = load_json_file("example8.json");
+
+    cJSON_Delete(json1);
+    cJSON_Delete(json2);
+    cJSON_Delete(json3);
+    cJSON_Delete(json4);
+    cJSON_Delete(json5);
+    cJSON_Delete(json6);
+    cJSON_Delete(json7);
+    cJSON_Delete(json8);
 
     return 0;
 }
+
 ```
