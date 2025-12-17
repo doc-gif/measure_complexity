@@ -1,6 +1,3 @@
-#ifndef INI_H
-#define INI_H
-
 #include <stdio.h>
 
 typedef struct dictionary {
@@ -11,6 +8,3 @@ typedef struct dictionary {
 } dictionary ;
 
 void dictionary_del(dictionary * vd);
-
-#endif
-
