@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
-#include "dictionary_del_func.h"
+#include "ini.h"
 
 /*---------------------------- Defines -------------------------------------*/
 #define ASCIILINESZ         (32)
@@ -393,7 +393,7 @@ dictionary *iniparser_load(const char *ininame) {
 
 int main() {
     dictionary *ini1, *ini2, *ini3, *ini4, *ini5;
-    char *value1, *value2;
+    const char *value1, *value2;
 
     iniparser_set_error_callback(NULL);
 

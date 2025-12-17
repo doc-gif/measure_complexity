@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
-#include "dictionary_del_func.h"
+#include "ini.h"
 
 /*---------------------------- Defines -------------------------------------*/
 #define ASCIILINESZ         (32)
