@@ -1,6 +1,3 @@
-#ifndef JSON_H
-#define JSON_H
-
 #define cJSON_False  (1 << 0)
 #define cJSON_True   (1 << 1)
 #define cJSON_NULL   (1 << 2)
@@ -23,5 +20,3 @@ typedef struct cJSON {
 typedef int cJSON_bool;
 
 void cJSON_Delete(cJSON *item);
-
-#endif
