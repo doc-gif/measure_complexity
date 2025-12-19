@@ -472,7 +472,7 @@ static cJSON *sort_list(cJSON *list, const cJSON_bool case_sensitive) {
 }
 
 int main() {
-    cJSON *json1, *json2, *json3, *json4, *json5, *json6, *json7, *json8;
+    cJSON *json1, *json2, *json3, *json4, *json5, *json6, *json7;
 
     json1 = load_json_file("example1.json");
 
@@ -490,8 +490,6 @@ int main() {
     json7 = load_json_file("example7.json");
     printf("%s", json7->valuestring);
 
-    json8 = load_json_file("example8.json");
-
     cJSON_Delete(json1);
     cJSON_Delete(json2);
     cJSON_Delete(json3);
@@ -499,7 +497,6 @@ int main() {
     cJSON_Delete(json5);
     cJSON_Delete(json6);
     cJSON_Delete(json7);
-    cJSON_Delete(json8);
 
     return 0;
 }
